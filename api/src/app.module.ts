@@ -19,7 +19,7 @@ import { StatsModule } from './stats/stats.module';
       ttl: 3600000, // 1 hour in milliseconds
       max: 100, // maximum number of items in cache
     }),
-    MongooseModule.forRoot(process.env.DATABASE_URL!),
+    MongooseModule.forRoot(process.env.MONGO_URL!),
     ArtistsModule,
     AlbumsModule,
     TracksModule,
