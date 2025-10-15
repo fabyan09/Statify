@@ -16,6 +16,16 @@ interface LabelStats {
   compilations: number;
 }
 
+interface LabelAccumulator {
+  label: string;
+  albumCount: number;
+  trackCount: number;
+  totalPopularity: number;
+  singles: number;
+  albums: number;
+  compilations: number;
+}
+
 const COLORS = [
   "#2563eb",
   "#7c3aed",
@@ -57,7 +67,7 @@ export default function LabelLensPage() {
       else if (album.album_type === "compilation") acc[album.label].compilations++;
 
       return acc;
-    }, {} as Record<string, any>)
+    }, {} as Record<string, LabelAccumulator>)
   )
     .map(([_, stats]) => ({
       label: stats.label,
@@ -202,8 +212,10 @@ export default function LabelLensPage() {
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={({ name, percent }) =>
-                    `${name}: ${(percent * 100).toFixed(0)}%`
+                  label={
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    ({ name, percent }: any) =>
+                      `${name}: ${(percent * 100).toFixed(0)}%`
                   }
                   outerRadius={100}
                   fill="#8884d8"
