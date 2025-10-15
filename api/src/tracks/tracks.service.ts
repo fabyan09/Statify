@@ -1,26 +1,36 @@
 import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { CreateTrackDto } from './dto/create-track.dto';
 import { UpdateTrackDto } from './dto/update-track.dto';
+import { Track, TrackDocument } from './entities/track.entity';
 
 @Injectable()
 export class TracksService {
-  create(createTrackDto: CreateTrackDto) {
-    return 'This action adds a new track';
+  constructor(
+    @InjectModel(Track.name) private trackModel: Model<TrackDocument>,
+  ) {}
+
+  async create(createTrackDto: CreateTrackDto) {
+    const createdTrack = new this.trackModel(createTrackDto);
+    return createdTrack.save();
   }
 
-  findAll() {
-    return `This action returns all tracks`;
+  async findAll() {
+    return this.trackModel.find().exec();
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} track`;
+  async findOne(id: string) {
+    return this.trackModel.findById(id).exec();
   }
 
-  update(id: number, updateTrackDto: UpdateTrackDto) {
-    return `This action updates a #${id} track`;
+  async update(id: string, updateTrackDto: UpdateTrackDto) {
+    return this.trackModel
+      .findByIdAndUpdate(id, updateTrackDto, { new: true })
+      .exec();
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} track`;
+  async remove(id: string) {
+    return this.trackModel.findByIdAndDelete(id).exec();
   }
 }

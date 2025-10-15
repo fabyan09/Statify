@@ -3,9 +3,9 @@ import { HydratedDocument } from 'mongoose';
 
 export type AlbumDocument = HydratedDocument<Album>;
 
-@Schema()
+@Schema({ collection: 'albums', versionKey: false })
 export class Album {
-  @Prop({ required: true })
+  @Prop({ type: String, required: true })
   _id: string;
 
   @Prop({ required: true })

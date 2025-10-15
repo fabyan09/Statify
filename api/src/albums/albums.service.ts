@@ -1,26 +1,36 @@
 import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { CreateAlbumDto } from './dto/create-album.dto';
 import { UpdateAlbumDto } from './dto/update-album.dto';
+import { Album, AlbumDocument } from './entities/album.entity';
 
 @Injectable()
 export class AlbumsService {
-  create(createAlbumDto: CreateAlbumDto) {
-    return 'This action adds a new album';
+  constructor(
+    @InjectModel(Album.name) private albumModel: Model<AlbumDocument>,
+  ) {}
+
+  async create(createAlbumDto: CreateAlbumDto) {
+    const createdAlbum = new this.albumModel(createAlbumDto);
+    return createdAlbum.save();
   }
 
-  findAll() {
-    return `This action returns all albums`;
+  async findAll() {
+    return this.albumModel.find().exec();
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} album`;
+  async findOne(id: string) {
+    return this.albumModel.findById(id).exec();
   }
 
-  update(id: number, updateAlbumDto: UpdateAlbumDto) {
-    return `This action updates a #${id} album`;
+  async update(id: string, updateAlbumDto: UpdateAlbumDto) {
+    return this.albumModel
+      .findByIdAndUpdate(id, updateAlbumDto, { new: true })
+      .exec();
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} album`;
+  async remove(id: string) {
+    return this.albumModel.findByIdAndDelete(id).exec();
   }
 }
