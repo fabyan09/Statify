@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Artist, Track } from "@/lib/types";
 import { useArtists, useTracks } from "@/lib/hooks";
 import { Badge } from "@/components/ui/badge";
-import Image from "next/image";
+import NextImage from "next/image";
 import dynamic from "next/dynamic";
 
 // Dynamic import to avoid SSR issues with force-graph
@@ -42,8 +42,10 @@ export default function CollabNetworkPage() {
   const error = artistsError || tracksError;
 
   const [selectedArtist, setSelectedArtist] = useState<Artist | null>(null);
+  const [highlightedNode, setHighlightedNode] = useState<string | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const graphRef = useRef<any>(null);
+  const imageCache = useRef<Map<string, HTMLImageElement>>(new Map());
 
   // Calculate collaborations
   const { collaborations, topCollabs } = useMemo(() => {
@@ -129,6 +131,7 @@ export default function CollabNetworkPage() {
     const artist = artists.find((a) => a._id === node.id);
     if (artist) {
       setSelectedArtist(artist);
+      setHighlightedNode(node.id === highlightedNode ? null : node.id);
     }
   };
 
@@ -235,7 +238,15 @@ export default function CollabNetworkPage() {
                   nodeAutoColorBy="popularity"
                   nodeVal={(node: any) => node.popularity / 10}
                   linkWidth={(link: any) => Math.sqrt(link.value)}
-                  linkColor={() => "#ffffff"}
+                  linkColor={(link: any) => {
+                    if (!highlightedNode) return "#6b7280"; // Gris par défaut
+                    const linkSource = typeof link.source === 'object' ? link.source.id : link.source;
+                    const linkTarget = typeof link.target === 'object' ? link.target.id : link.target;
+                    if (linkSource === highlightedNode || linkTarget === highlightedNode) {
+                      return "#ffffff"; // Blanc pour les liens connectés au nœud sélectionné
+                    }
+                    return "#6b7280"; // Gris pour les autres
+                  }}
                   linkLabel={(link: any) =>
                     `${link.value} collaboration${link.value > 1 ? "s" : ""}`
                   }
@@ -246,23 +257,60 @@ export default function CollabNetworkPage() {
                   nodeCanvasObject={(node: any, ctx, globalScale) => {
                     const label = node.name;
                     const fontSize = 12 / globalScale;
-                    ctx.font = `${fontSize}px Sans-Serif`;
-                    const textWidth = ctx.measureText(label).width;
-                    const bckgDimensions = [textWidth, fontSize].map(
-                      (n) => n + fontSize * 0.2
-                    );
+                    const nodeRadius = Math.max(node.popularity / 10, 5);
 
-                    // Draw node
-                    ctx.fillStyle = node.color || "#2563eb";
-                    ctx.beginPath();
-                    ctx.arc(node.x, node.y, node.popularity / 10, 0, 2 * Math.PI);
-                    ctx.fill();
+                    // Draw node with image or fallback to circle
+                    if (node.image) {
+                      let img = imageCache.current.get(node.image);
+                      if (!img) {
+                        img = new Image();
+                        img.crossOrigin = "anonymous";
+                        img.src = node.image;
+                        imageCache.current.set(node.image, img);
+                      }
+
+                      if (img.complete) {
+                        ctx.save();
+                        ctx.beginPath();
+                        ctx.arc(node.x, node.y, nodeRadius, 0, 2 * Math.PI);
+                        ctx.closePath();
+                        ctx.clip();
+                        ctx.drawImage(
+                          img,
+                          node.x - nodeRadius,
+                          node.y - nodeRadius,
+                          nodeRadius * 2,
+                          nodeRadius * 2
+                        );
+                        ctx.restore();
+
+                        // Add border
+                        ctx.strokeStyle = "#ffffff";
+                        ctx.lineWidth = 2 / globalScale;
+                        ctx.beginPath();
+                        ctx.arc(node.x, node.y, nodeRadius, 0, 2 * Math.PI);
+                        ctx.stroke();
+                      } else {
+                        // Fallback while loading
+                        ctx.fillStyle = "#2563eb";
+                        ctx.beginPath();
+                        ctx.arc(node.x, node.y, nodeRadius, 0, 2 * Math.PI);
+                        ctx.fill();
+                      }
+                    } else {
+                      // Fallback if no image
+                      ctx.fillStyle = "#2563eb";
+                      ctx.beginPath();
+                      ctx.arc(node.x, node.y, nodeRadius, 0, 2 * Math.PI);
+                      ctx.fill();
+                    }
 
                     // Draw label
+                    ctx.font = `${fontSize}px Sans-Serif`;
                     ctx.textAlign = "center";
                     ctx.textBaseline = "middle";
                     ctx.fillStyle = "#ffffff";
-                    ctx.fillText(label, node.x, node.y + node.popularity / 10 + 10);
+                    ctx.fillText(label, node.x, node.y + nodeRadius + 10 / globalScale);
                   }}
                 />
                 {/* eslint-enable @typescript-eslint/no-explicit-any */}
@@ -286,7 +334,7 @@ export default function CollabNetworkPage() {
                 <div className="flex flex-col items-center gap-3">
                   <div className="relative h-32 w-32 rounded-full overflow-hidden bg-muted">
                     {selectedArtist.images[0]?.url ? (
-                      <Image
+                      <NextImage
                         src={selectedArtist.images[0].url}
                         alt={selectedArtist.name}
                         fill
@@ -379,7 +427,7 @@ export default function CollabNetworkPage() {
                     <div className="flex items-center gap-2">
                       <div className="relative h-10 w-10 rounded-full overflow-hidden bg-muted">
                         {artist1.images[0]?.url && (
-                          <Image
+                          <NextImage
                             src={artist1.images[0].url}
                             alt={artist1.name}
                             fill
@@ -391,7 +439,7 @@ export default function CollabNetworkPage() {
                       <span className="text-muted-foreground">×</span>
                       <div className="relative h-10 w-10 rounded-full overflow-hidden bg-muted">
                         {artist2.images[0]?.url && (
-                          <Image
+                          <NextImage
                             src={artist2.images[0].url}
                             alt={artist2.name}
                             fill
