@@ -1,103 +1,197 @@
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { fetchArtists, fetchAlbums, fetchTracks } from "@/lib/api";
+import { Users, Disc, Music, TrendingUp } from "lucide-react";
 import Image from "next/image";
 
-export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+export default async function HomePage() {
+  try {
+    const [artists, albums, tracks] = await Promise.all([
+      fetchArtists(),
+      fetchAlbums(),
+      fetchTracks(),
+    ]);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    // Calculate KPIs
+    const totalArtists = artists.length;
+    const totalAlbums = albums.length;
+    const totalTracks = tracks.length;
+
+    const avgPopularity = artists.length > 0
+      ? Math.round(artists.reduce((sum, a) => sum + a.popularity, 0) / artists.length)
+      : 0;
+
+    const uniqueLabels = new Set(albums.map((a) => a.label)).size;
+
+    // Top 10 popular artists
+    const topArtists = artists
+      .sort((a, b) => b.popularity - a.popularity)
+      .slice(0, 10);
+
+    return (
+      <div className="space-y-8">
+        <div>
+          <h1 className="text-4xl font-bold mb-2">Dashboard Overview</h1>
+          <p className="text-muted-foreground">
+            Comprehensive analytics for your music collection
+          </p>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+
+        {/* KPIs */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Total Artists
+              </CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{totalArtists.toLocaleString()}</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Total Albums
+              </CardTitle>
+              <Disc className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{totalAlbums.toLocaleString()}</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Total Tracks
+              </CardTitle>
+              <Music className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{totalTracks.toLocaleString()}</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Avg Popularity
+              </CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{avgPopularity}/100</div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Additional Stats */}
+        <div className="grid gap-4 md:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>Quick Stats</CardTitle>
+              <CardDescription>Additional metrics at a glance</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Unique Labels</span>
+                <span className="font-semibold">{uniqueLabels}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Avg Tracks per Album</span>
+                <span className="font-semibold">
+                  {albums.length > 0 ? (totalTracks / totalAlbums).toFixed(1) : 0}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Total Followers</span>
+                <span className="font-semibold">
+                  {artists.reduce((sum, a) => sum + a.followers, 0).toLocaleString()}
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Album Types</CardTitle>
+              <CardDescription>Distribution of album types</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {Object.entries(
+                albums.reduce((acc, album) => {
+                  acc[album.album_type] = (acc[album.album_type] || 0) + 1;
+                  return acc;
+                }, {} as Record<string, number>)
+              ).map(([type, count]) => (
+                <div key={type} className="flex justify-between">
+                  <span className="text-muted-foreground capitalize">{type}</span>
+                  <span className="font-semibold">{count}</span>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Top Artists */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Top 10 Most Popular Artists</CardTitle>
+            <CardDescription>Based on Spotify popularity score</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-5">
+              {topArtists.map((artist) => (
+                <div key={artist._id} className="flex flex-col items-center space-y-2">
+                  <div className="relative h-32 w-32 rounded-full overflow-hidden bg-muted">
+                    {artist.images[0]?.url ? (
+                      <Image
+                        src={artist.images[0].url}
+                        alt={artist.name}
+                        fill
+                        className="object-cover"
+                      />
+                    ) : (
+                      <div className="flex items-center justify-center h-full w-full">
+                        <Users className="h-12 w-12 text-muted-foreground" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="text-center">
+                    <p className="font-semibold text-sm line-clamp-2">{artist.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {artist.popularity}/100
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {artist.followers.toLocaleString()} followers
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  } catch (error) {
+    return (
+      <div className="flex items-center justify-center h-[50vh]">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle>Error Loading Data</CardTitle>
+            <CardDescription>
+              Failed to fetch data from the API. Make sure the API server is running.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              {error instanceof Error ? error.message : "Unknown error"}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 }
