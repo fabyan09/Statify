@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Artist, Track } from "@/lib/types";
 import { useArtists, useTracks } from "@/lib/hooks";
@@ -46,6 +46,7 @@ export default function CollabNetworkPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const graphRef = useRef<any>(null);
   const imageCache = useRef<Map<string, HTMLImageElement>>(new Map());
+  const hasZoomedRef = useRef(false);
 
   // Calculate collaborations
   const { collaborations, topCollabs } = useMemo(() => {
@@ -134,6 +135,21 @@ export default function CollabNetworkPage() {
       setHighlightedNode(node.id === highlightedNode ? null : node.id);
     }
   };
+
+  const handleArtistSelect = (artist: Artist) => {
+    setSelectedArtist(artist);
+    setHighlightedNode(artist._id);
+  };
+
+  // Center graph on load
+  useEffect(() => {
+    if (graphRef.current && graphData.nodes.length > 0 && !hasZoomedRef.current) {
+      setTimeout(() => {
+        graphRef.current?.zoomToFit(600, 600);
+        hasZoomedRef.current = true;
+      }, 100);
+    }
+  }, [graphData]);
 
   if (error) {
     return (
@@ -238,6 +254,8 @@ export default function CollabNetworkPage() {
                   nodeAutoColorBy="popularity"
                   nodeVal={(node: any) => node.popularity / 10}
                   linkWidth={(link: any) => Math.sqrt(link.value)}
+                  linkDistance={500}
+                  d3VelocityDecay={0.3}
                   linkColor={(link: any) => {
                     if (!highlightedNode) return "#6b7280"; // Gris par défaut
                     const linkSource = typeof link.source === 'object' ? link.source.id : link.source;
@@ -275,12 +293,30 @@ export default function CollabNetworkPage() {
                         ctx.arc(node.x, node.y, nodeRadius, 0, 2 * Math.PI);
                         ctx.closePath();
                         ctx.clip();
+
+                        // Calculate aspect ratio to maintain image proportions
+                        const imgAspect = img.width / img.height;
+                        let drawWidth = nodeRadius * 2;
+                        let drawHeight = nodeRadius * 2;
+                        let offsetX = 0;
+                        let offsetY = 0;
+
+                        if (imgAspect > 1) {
+                          // Image is wider than tall
+                          drawWidth = drawHeight * imgAspect;
+                          offsetX = -(drawWidth - nodeRadius * 2) / 2;
+                        } else {
+                          // Image is taller than wide
+                          drawHeight = drawWidth / imgAspect;
+                          offsetY = -(drawHeight - nodeRadius * 2) / 2;
+                        }
+
                         ctx.drawImage(
                           img,
-                          node.x - nodeRadius,
-                          node.y - nodeRadius,
-                          nodeRadius * 2,
-                          nodeRadius * 2
+                          node.x - nodeRadius + offsetX,
+                          node.y - nodeRadius + offsetY,
+                          drawWidth,
+                          drawHeight
                         );
                         ctx.restore();
 
@@ -389,6 +425,67 @@ export default function CollabNetworkPage() {
                     Open in Spotify
                   </a>
                 )}
+
+                {/* Collaborators List */}
+                {(() => {
+                  const artistCollabs = collaborations
+                    .filter(
+                      (c) =>
+                        c.artist1 === selectedArtist._id ||
+                        c.artist2 === selectedArtist._id
+                    )
+                    .map((c) => {
+                      const collabId =
+                        c.artist1 === selectedArtist._id ? c.artist2 : c.artist1;
+                      return {
+                        artist: artists.find((a) => a._id === collabId),
+                        count: c.count,
+                      };
+                    })
+                    .filter((c) => c.artist)
+                    .sort((a, b) => b.count - a.count);
+
+                  if (artistCollabs.length === 0) return null;
+
+                  return (
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Collaborators ({artistCollabs.length})
+                      </p>
+                      <div className="space-y-2 max-h-[200px] overflow-y-auto">
+                        {artistCollabs.map(({ artist, count }) => {
+                          if (!artist) return null;
+                          return (
+                            <div
+                              key={artist._id}
+                              onClick={() => handleArtistSelect(artist)}
+                              className="flex items-center gap-2 p-2 rounded-md hover:bg-muted/50 transition-colors cursor-pointer"
+                            >
+                              <div className="relative h-8 w-8 rounded-full overflow-hidden bg-muted flex-shrink-0">
+                                {artist.images[0]?.url && (
+                                  <NextImage
+                                    src={artist.images[0].url}
+                                    alt={artist.name}
+                                    fill
+                                    className="object-cover"
+                                  />
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium truncate">
+                                  {artist.name}
+                                </p>
+                              </div>
+                              <Badge variant="secondary" className="text-xs flex-shrink-0">
+                                {count}
+                              </Badge>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             ) : (
               <p className="text-sm text-muted-foreground text-center py-8">
