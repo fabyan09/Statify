@@ -16,6 +16,15 @@ interface CohortData {
   compilations: number;
 }
 
+interface CohortAccumulator {
+  period: string;
+  releases: number;
+  totalPopularity: number;
+  singles: number;
+  albums: number;
+  compilations: number;
+}
+
 export default function ReleaseCohortsPage() {
   const { data: albums, isLoading, error } = useAlbums();
 
@@ -39,7 +48,7 @@ export default function ReleaseCohortsPage() {
       else if (album.album_type === "album") acc[year].albums++;
       else if (album.album_type === "compilation") acc[year].compilations++;
       return acc;
-    }, {} as Record<string, any>)
+    }, {} as Record<string, CohortAccumulator>)
   )
     .map(([_, data]) => ({
       period: data.period,
@@ -72,7 +81,7 @@ export default function ReleaseCohortsPage() {
       else if (album.album_type === "album") acc[yearMonth].albums++;
       else if (album.album_type === "compilation") acc[yearMonth].compilations++;
       return acc;
-    }, {} as Record<string, any>)
+    }, {} as Record<string, CohortAccumulator>)
   )
     .map(([_, data]) => ({
       period: data.period,

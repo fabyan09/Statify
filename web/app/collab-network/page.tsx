@@ -42,7 +42,8 @@ export default function CollabNetworkPage() {
   const error = artistsError || tracksError;
 
   const [selectedArtist, setSelectedArtist] = useState<Artist | null>(null);
-  const graphRef = useRef<any>();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const graphRef = useRef<any>(null);
 
   // Calculate collaborations
   const { collaborations, topCollabs } = useMemo(() => {
@@ -91,7 +92,7 @@ export default function CollabNetworkPage() {
       collabArtistIds.add(artist2);
     });
 
-    const nodes: GraphNode[] = Array.from(collabArtistIds)
+    const nodes = Array.from(collabArtistIds)
       .map((id) => {
         const artist = artistMap.get(id);
         if (!artist) return null;
@@ -102,7 +103,7 @@ export default function CollabNetworkPage() {
           popularity: artist.popularity,
           followers: artist.followers,
           genres: artist.genres,
-        };
+        } as GraphNode;
       })
       .filter((n): n is GraphNode => n !== null)
       .slice(0, 50); // Limit to 50 nodes for performance
@@ -122,6 +123,7 @@ export default function CollabNetworkPage() {
     return { nodes, links };
   }, [artists, collaborations]);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleNodeClick = (node: any) => {
     if (!artists) return;
     const artist = artists.find((a) => a._id === node.id);
@@ -222,6 +224,8 @@ export default function CollabNetworkPage() {
           <CardContent>
             <div className="w-full h-[600px] border rounded-lg bg-muted/20 overflow-hidden relative">
               {typeof window !== "undefined" && (
+                <>
+                {/* eslint-disable @typescript-eslint/no-explicit-any */}
                 <ForceGraph2D
                   ref={graphRef}
                   graphData={graphData}
@@ -261,6 +265,8 @@ export default function CollabNetworkPage() {
                     ctx.fillText(label, node.x, node.y + node.popularity / 10 + 10);
                   }}
                 />
+                {/* eslint-enable @typescript-eslint/no-explicit-any */}
+                </>
               )}
             </div>
           </CardContent>
