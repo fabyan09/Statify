@@ -141,13 +141,19 @@ export default function CollabNetworkPage() {
     setHighlightedNode(artist._id);
   };
 
-  // Center graph on load
+  // Center graph on load and configure forces
   useEffect(() => {
-    if (graphRef.current && graphData.nodes.length > 0 && !hasZoomedRef.current) {
-      setTimeout(() => {
-        graphRef.current?.zoomToFit(600, 600);
-        hasZoomedRef.current = true;
-      }, 100);
+    if (graphRef.current && graphData.nodes.length > 0) {
+      if (!hasZoomedRef.current) {
+        setTimeout(() => {
+          graphRef.current?.zoomToFit(600, 600);
+          hasZoomedRef.current = true;
+        }, 100);
+      }
+
+      // Configure link distance
+      graphRef.current?.d3Force('link')?.distance(150);
+      graphRef.current?.d3Force('charge')?.strength(-500);
     }
   }, [graphData]);
 
@@ -254,7 +260,6 @@ export default function CollabNetworkPage() {
                   nodeAutoColorBy="popularity"
                   nodeVal={(node: any) => node.popularity / 10}
                   linkWidth={(link: any) => Math.sqrt(link.value)}
-                  linkDistance={500}
                   d3VelocityDecay={0.3}
                   linkColor={(link: any) => {
                     if (!highlightedNode) return "#6b7280"; // Gris par défaut
