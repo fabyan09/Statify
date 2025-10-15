@@ -1,48 +1,32 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Track, Album } from "@/lib/types";
+import { useTracks, useAlbums } from "@/lib/hooks";
 import { ExternalLink, Search } from "lucide-react";
 import Image from "next/image";
 
 export default function TrackExplorerPage() {
-  const [tracks, setTracks] = useState<Track[]>([]);
-  const [albums, setAlbums] = useState<Album[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: tracks, isLoading: tracksLoading, error: tracksError } = useTracks();
+  const { data: albums, isLoading: albumsLoading, error: albumsError } = useAlbums();
+
+  const isLoading = tracksLoading || albumsLoading;
+  const error = tracksError || albumsError;
+
   const [searchTerm, setSearchTerm] = useState("");
   const [explicitFilter, setExplicitFilter] = useState<string>("all");
   const [durationFilter, setDurationFilter] = useState<string>("all");
 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const [tracksRes, albumsRes] = await Promise.all([
-          fetch("/api/tracks"),
-          fetch("/api/albums"),
-        ]);
-        const tracksData = await tracksRes.json();
-        const albumsData = await albumsRes.json();
-        setTracks(tracksData);
-        setAlbums(albumsData);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchData();
-  }, []);
-
   // Create album lookup
-  const albumMap = new Map(albums.map((album) => [album._id, album]));
+  const albumMap = albums ? new Map(albums.map((album) => [album._id, album])) : new Map();
 
   // Filter tracks
-  const filteredTracks = tracks.filter((track) => {
+  const filteredTracks = (tracks || []).filter((track) => {
     const matchesSearch =
       track.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       albumMap.get(track.album_id)?.name.toLowerCase().includes(searchTerm.toLowerCase());
@@ -67,10 +51,33 @@ export default function TrackExplorerPage() {
     return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   }
 
-  if (loading) {
+  if (error) {
     return (
       <div className="flex items-center justify-center h-[50vh]">
-        <p className="text-muted-foreground">Loading tracks...</p>
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle>Error Loading Data</CardTitle>
+            <CardDescription>
+              Failed to fetch data from the API. Make sure the API server is running.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              {error instanceof Error ? error.message : "Unknown error"}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (isLoading || !tracks || !albums) {
+    return (
+      <div className="flex items-center justify-center h-[50vh]">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="text-muted-foreground">Loading tracks...</p>
+        </div>
       </div>
     );
   }

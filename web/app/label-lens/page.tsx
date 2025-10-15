@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Album, Track } from "@/lib/types";
+import { useAlbums, useTracks } from "@/lib/hooks";
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { Badge } from "@/components/ui/badge";
 
@@ -28,32 +28,14 @@ const COLORS = [
 ];
 
 export default function LabelLensPage() {
-  const [albums, setAlbums] = useState<Album[]>([]);
-  const [tracks, setTracks] = useState<Track[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: albums, isLoading: albumsLoading, error: albumsError } = useAlbums();
+  const { data: tracks, isLoading: tracksLoading, error: tracksError } = useTracks();
 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const [albumsRes, tracksRes] = await Promise.all([
-          fetch("/api/albums"),
-          fetch("/api/tracks"),
-        ]);
-        const albumsData = await albumsRes.json();
-        const tracksData = await tracksRes.json();
-        setAlbums(albumsData);
-        setTracks(tracksData);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchData();
-  }, []);
+  const isLoading = albumsLoading || tracksLoading;
+  const error = albumsError || tracksError;
 
   // Calculate label stats
-  const labelStats: LabelStats[] = Object.entries(
+  const labelStats: LabelStats[] = albums ? Object.entries(
     albums.reduce((acc, album) => {
       if (!acc[album.label]) {
         acc[album.label] = {
@@ -86,13 +68,13 @@ export default function LabelLensPage() {
       albums: stats.albums,
       compilations: stats.compilations,
     }))
-    .sort((a, b) => b.avgPopularity - a.avgPopularity);
+    .sort((a, b) => b.avgPopularity - a.avgPopularity) : [];
 
   // Top 10 labels by popularity
   const top10Labels = labelStats.slice(0, 10);
 
   // Album type distribution (overall)
-  const albumTypeData = [
+  const albumTypeData = albums ? [
     {
       name: "Singles",
       value: albums.filter((a) => a.album_type === "single").length,
@@ -105,12 +87,35 @@ export default function LabelLensPage() {
       name: "Compilations",
       value: albums.filter((a) => a.album_type === "compilation").length,
     },
-  ];
+  ] : [];
 
-  if (loading) {
+  if (error) {
     return (
       <div className="flex items-center justify-center h-[50vh]">
-        <p className="text-muted-foreground">Loading label data...</p>
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle>Error Loading Data</CardTitle>
+            <CardDescription>
+              Failed to fetch data from the API. Make sure the API server is running.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              {error instanceof Error ? error.message : "Unknown error"}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (isLoading || !albums || !tracks) {
+    return (
+      <div className="flex items-center justify-center h-[50vh]">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="text-muted-foreground">Loading label data...</p>
+        </div>
       </div>
     );
   }

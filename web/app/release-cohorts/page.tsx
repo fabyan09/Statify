@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Album } from "@/lib/types";
+import { useAlbums } from "@/lib/hooks";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { Badge } from "@/components/ui/badge";
 
@@ -17,26 +17,10 @@ interface CohortData {
 }
 
 export default function ReleaseCohortsPage() {
-  const [albums, setAlbums] = useState<Album[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const response = await fetch("/api/albums");
-        const data = await response.json();
-        setAlbums(data);
-      } catch (error) {
-        console.error("Error fetching albums:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchData();
-  }, []);
+  const { data: albums, isLoading, error } = useAlbums();
 
   // Group by year
-  const yearlyData: CohortData[] = Object.entries(
+  const yearlyData: CohortData[] = albums ? Object.entries(
     albums.reduce((acc, album) => {
       const year = album.release_date.split("-")[0];
       if (!acc[year]) {
@@ -65,10 +49,10 @@ export default function ReleaseCohortsPage() {
       albums: data.albums,
       compilations: data.compilations,
     }))
-    .sort((a, b) => a.period.localeCompare(b.period));
+    .sort((a, b) => a.period.localeCompare(b.period)) : [];
 
   // Group by year-month
-  const monthlyData: CohortData[] = Object.entries(
+  const monthlyData: CohortData[] = albums ? Object.entries(
     albums.reduce((acc, album) => {
       const [year, month] = album.release_date.split("-");
       const yearMonth = `${year}-${month}`;
@@ -99,17 +83,40 @@ export default function ReleaseCohortsPage() {
       compilations: data.compilations,
     }))
     .sort((a, b) => a.period.localeCompare(b.period))
-    .slice(-36); // Last 36 months
+    .slice(-36) : []; // Last 36 months
 
   // Top performing cohorts
   const topCohorts = [...yearlyData]
     .sort((a, b) => b.avgPopularity - a.avgPopularity)
     .slice(0, 10);
 
-  if (loading) {
+  if (error) {
     return (
       <div className="flex items-center justify-center h-[50vh]">
-        <p className="text-muted-foreground">Loading release data...</p>
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle>Error Loading Data</CardTitle>
+            <CardDescription>
+              Failed to fetch albums from the API. Make sure the API server is running.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              {error instanceof Error ? error.message : "Unknown error"}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (isLoading || !albums) {
+    return (
+      <div className="flex items-center justify-center h-[50vh]">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="text-muted-foreground">Loading release data...</p>
+        </div>
       </div>
     );
   }

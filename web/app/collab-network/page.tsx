@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Artist, Track } from "@/lib/types";
+import { useArtists, useTracks } from "@/lib/hooks";
 import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
 import dynamic from "next/dynamic";
@@ -34,34 +35,19 @@ interface GraphLink {
 }
 
 export default function CollabNetworkPage() {
-  const [artists, setArtists] = useState<Artist[]>([]);
-  const [tracks, setTracks] = useState<Track[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: artists, isLoading: artistsLoading, error: artistsError } = useArtists();
+  const { data: tracks, isLoading: tracksLoading, error: tracksError } = useTracks();
+
+  const isLoading = artistsLoading || tracksLoading;
+  const error = artistsError || tracksError;
+
   const [selectedArtist, setSelectedArtist] = useState<Artist | null>(null);
   const graphRef = useRef<any>();
 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const [artistsRes, tracksRes] = await Promise.all([
-          fetch("/api/artists"),
-          fetch("/api/tracks"),
-        ]);
-        const artistsData = await artistsRes.json();
-        const tracksData = await tracksRes.json();
-        setArtists(artistsData);
-        setTracks(tracksData);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchData();
-  }, []);
-
   // Calculate collaborations
   const { collaborations, topCollabs } = useMemo(() => {
+    if (!tracks) return { collaborations: [], topCollabs: [] };
+
     const collabMap = new Map<string, number>();
 
     tracks.forEach((track) => {
@@ -94,6 +80,8 @@ export default function CollabNetworkPage() {
 
   // Build graph data
   const graphData = useMemo(() => {
+    if (!artists) return { nodes: [], links: [] };
+
     const artistMap = new Map(artists.map((a) => [a._id, a]));
 
     // Get artists involved in collaborations
@@ -135,16 +123,40 @@ export default function CollabNetworkPage() {
   }, [artists, collaborations]);
 
   const handleNodeClick = (node: any) => {
+    if (!artists) return;
     const artist = artists.find((a) => a._id === node.id);
     if (artist) {
       setSelectedArtist(artist);
     }
   };
 
-  if (loading) {
+  if (error) {
     return (
       <div className="flex items-center justify-center h-[50vh]">
-        <p className="text-muted-foreground">Loading collaboration data...</p>
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle>Error Loading Data</CardTitle>
+            <CardDescription>
+              Failed to fetch data from the API. Make sure the API server is running.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              {error instanceof Error ? error.message : "Unknown error"}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (isLoading || !artists || !tracks) {
+    return (
+      <div className="flex items-center justify-center h-[50vh]">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="text-muted-foreground">Loading collaboration data...</p>
+        </div>
       </div>
     );
   }

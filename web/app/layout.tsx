@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, Lora, Roboto_Mono } from "next/font/google";
 import "./globals.css";
 import { Navigation } from "@/components/navigation";
+import { QueryProvider } from "@/components/providers/query-provider";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   variable: "--font-sans",
@@ -33,10 +34,12 @@ export default function RootLayout({
       <body
         className={`${plusJakartaSans.variable} ${lora.variable} ${robotoMono.variable} font-sans antialiased dark`}
       >
-        <Navigation />
-        <main className="container mx-auto p-8">
-          {children}
-        </main>
+        <QueryProvider>
+          <Navigation />
+          <main className="container mx-auto p-8">
+            {children}
+          </main>
+        </QueryProvider>
       </body>
     </html>
   );
