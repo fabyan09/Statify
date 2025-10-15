@@ -1,6 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
 import { CreateArtistDto } from './dto/create-artist.dto';
 import { UpdateArtistDto } from './dto/update-artist.dto';
 import { Artist, ArtistDocument } from './entities/artist.entity';
@@ -9,15 +11,25 @@ import { Artist, ArtistDocument } from './entities/artist.entity';
 export class ArtistsService {
   constructor(
     @InjectModel(Artist.name) private artistModel: Model<ArtistDocument>,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
   async create(createArtistDto: CreateArtistDto) {
     const createdArtist = new this.artistModel(createArtistDto);
-    return createdArtist.save();
+    const result = await createdArtist.save();
+    // Invalidate cache
+    await this.cacheManager.del('all-artists');
+    return result;
   }
 
   async findAll() {
-    return this.artistModel.find().exec();
+    const cacheKey = 'all-artists';
+    const cached = await this.cacheManager.get(cacheKey);
+    if (cached) return cached;
+
+    const artists = await this.artistModel.find().exec();
+    await this.cacheManager.set(cacheKey, artists);
+    return artists;
   }
 
   async findOne(id: string) {
@@ -25,12 +37,18 @@ export class ArtistsService {
   }
 
   async update(id: string, updateArtistDto: UpdateArtistDto) {
-    return this.artistModel
+    const result = await this.artistModel
       .findByIdAndUpdate(id, updateArtistDto, { new: true })
       .exec();
+    // Invalidate cache
+    await this.cacheManager.del('all-artists');
+    return result;
   }
 
   async remove(id: string) {
-    return this.artistModel.findByIdAndDelete(id).exec();
+    const result = await this.artistModel.findByIdAndDelete(id).exec();
+    // Invalidate cache
+    await this.cacheManager.del('all-artists');
+    return result;
   }
 }

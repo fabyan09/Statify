@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Artist } from "@/lib/types";
+import { useArtists } from "@/lib/hooks";
 import { Search, ArrowUpDown, Users, ExternalLink } from "lucide-react";
 import Image from "next/image";
 
@@ -14,36 +15,20 @@ type SortField = "name" | "popularity" | "followers";
 type SortDirection = "asc" | "desc";
 
 export default function ArtistBoardPage() {
-  const [artists, setArtists] = useState<Artist[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: artists, isLoading, error } = useArtists();
   const [searchTerm, setSearchTerm] = useState("");
   const [genreFilter, setGenreFilter] = useState<string>("all");
   const [popularityFilter, setPopularityFilter] = useState<string>("all");
   const [sortField, setSortField] = useState<SortField>("popularity");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const response = await fetch("/api/artists");
-        const data = await response.json();
-        setArtists(data);
-      } catch (error) {
-        console.error("Error fetching artists:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchData();
-  }, []);
-
   // Get all unique genres
-  const allGenres = Array.from(
-    new Set(artists.flatMap((artist) => artist.genres))
-  ).sort();
+  const allGenres = artists
+    ? Array.from(new Set(artists.flatMap((artist) => artist.genres))).sort()
+    : [];
 
   // Filter and sort artists
-  const filteredAndSortedArtists = artists
+  const filteredAndSortedArtists = (artists || [])
     .filter((artist) => {
       const matchesSearch = artist.name
         .toLowerCase()
@@ -88,10 +73,33 @@ export default function ArtistBoardPage() {
     }
   }
 
-  if (loading) {
+  if (error) {
     return (
       <div className="flex items-center justify-center h-[50vh]">
-        <p className="text-muted-foreground">Loading artists...</p>
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle>Error Loading Artists</CardTitle>
+            <CardDescription>
+              Failed to fetch artists from the API. Make sure the API server is running.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              {error instanceof Error ? error.message : "Unknown error"}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (isLoading || !artists) {
+    return (
+      <div className="flex items-center justify-center h-[50vh]">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="text-muted-foreground">Loading artists...</p>
+        </div>
       </div>
     );
   }
