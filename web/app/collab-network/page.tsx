@@ -208,19 +208,25 @@ export default function CollabNetworkPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="w-full h-[600px] border rounded-lg bg-muted/20">
+            <div className="w-full h-[600px] border rounded-lg bg-muted/20 overflow-hidden relative">
               {typeof window !== "undefined" && (
                 <ForceGraph2D
                   ref={graphRef}
                   graphData={graphData}
+                  width={undefined}
+                  height={600}
                   nodeLabel="name"
                   nodeAutoColorBy="popularity"
                   nodeVal={(node: any) => node.popularity / 10}
                   linkWidth={(link: any) => Math.sqrt(link.value)}
+                  linkColor={() => "#ffffff"}
                   linkLabel={(link: any) =>
                     `${link.value} collaboration${link.value > 1 ? "s" : ""}`
                   }
                   onNodeClick={handleNodeClick}
+                  enableNodeDrag={true}
+                  enableZoomInteraction={true}
+                  enablePanInteraction={true}
                   nodeCanvasObject={(node: any, ctx, globalScale) => {
                     const label = node.name;
                     const fontSize = 12 / globalScale;
@@ -239,7 +245,7 @@ export default function CollabNetworkPage() {
                     // Draw label
                     ctx.textAlign = "center";
                     ctx.textBaseline = "middle";
-                    ctx.fillStyle = "#000";
+                    ctx.fillStyle = "#ffffff";
                     ctx.fillText(label, node.x, node.y + node.popularity / 10 + 10);
                   }}
                 />
@@ -307,14 +313,16 @@ export default function CollabNetworkPage() {
                   </div>
                 )}
 
-                <a
-                  href={selectedArtist.external_urls.spotify}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block text-center text-sm text-primary hover:underline"
-                >
-                  Open in Spotify →
-                </a>
+                {selectedArtist.external_urls?.spotify && (
+                  <a
+                    href={selectedArtist.external_urls.spotify}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block w-full text-center px-4 py-2 bg-[#1DB954] text-white rounded-md hover:bg-[#1ed760] transition-colors font-medium text-sm"
+                  >
+                    Open in Spotify
+                  </a>
+                )}
               </div>
             ) : (
               <p className="text-sm text-muted-foreground text-center py-8">
