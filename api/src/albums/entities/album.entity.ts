@@ -58,6 +58,18 @@ export class Album {
     height: number;
     width: number;
   }[];
+
+  @Prop({ required: true })
+  label: string;
+
+  @Prop({ type: [String], default: [] })
+  artist_ids: string[];
+
+  @Prop({ type: [String], default: [] })
+  track_ids: string[];
+
+  @Prop({ type: [String], default: [] })
+  genres: string[];
 }
 
 export const AlbumSchema = SchemaFactory.createForClass(Album);
