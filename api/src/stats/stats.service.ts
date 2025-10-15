@@ -62,9 +62,22 @@ export class StatsService {
         ? totalFollowersResult[0].totalFollowers
         : 0;
 
-    // Avg tracks per album
+    // Avg tracks per album (excluding singles and compilations)
+    const albumsOnly = await this.albumModel
+      .find({ album_type: 'album' })
+      .select('track_ids')
+      .exec();
+
+    const totalAlbumsOnly = albumsOnly.length;
+    const totalTracksInAlbums = albumsOnly.reduce(
+      (sum, album) => sum + album.track_ids.length,
+      0,
+    );
+
     const avgTracksPerAlbum =
-      totalAlbums > 0 ? (totalTracks / totalAlbums).toFixed(1) : '0';
+      totalAlbumsOnly > 0
+        ? (totalTracksInAlbums / totalAlbumsOnly).toFixed(1)
+        : '0';
 
     // Album types distribution
     const albumTypesResult = await this.albumModel.aggregate([
