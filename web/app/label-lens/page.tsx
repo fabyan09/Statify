@@ -1,9 +1,8 @@
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Album, Track } from "@/lib/types";
 import { useAlbums, useTracks } from "@/lib/hooks";
-import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { Badge } from "@/components/ui/badge";
 
 interface LabelStats {
@@ -69,7 +68,7 @@ export default function LabelLensPage() {
       return acc;
     }, {} as Record<string, LabelAccumulator>)
   )
-    .map(([_, stats]) => ({
+    .map(([, stats]) => ({
       label: stats.label,
       albumCount: stats.albumCount,
       trackCount: stats.trackCount,

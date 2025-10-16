@@ -2,7 +2,7 @@
 
 import { useState, useRef, useMemo, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Artist, Track } from "@/lib/types";
+import { Artist } from "@/lib/types";
 import { useArtists, useTracks } from "@/lib/hooks";
 import { Badge } from "@/components/ui/badge";
 import NextImage from "next/image";
