@@ -5,10 +5,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Artist, Track } from "@/lib/types";
 import { useArtists, useTracks } from "@/lib/hooks";
 import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import NextImage from "next/image";
 import dynamic from "next/dynamic";
+import ElasticSlider from "./ElasticSlider";
+import { Users, Minus, Network, Zap } from "lucide-react";
 
 // Dynamic import to avoid SSR issues with force-graph
 const ForceGraph2D = dynamic(() => import("react-force-graph-2d"), {
@@ -252,69 +252,57 @@ export default function CollabNetworkPage() {
         </CardHeader>
         <CardContent>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-            <div className="space-y-2">
-              <Label htmlFor="maxNodes">Max Artists</Label>
-              <Input
-                id="maxNodes"
-                type="number"
-                min="10"
-                max="200"
-                value={maxNodes}
-                onChange={(e) => {
-                  const value = parseInt(e.target.value);
-                  if (!isNaN(value)) setMaxNodes(value);
-                }}
-              />
-              <p className="text-xs text-muted-foreground">10-200 nodes</p>
-            </div>
+            <ElasticSlider
+              label="Max Artists"
+              description="10-200 nodes"
+              defaultValue={maxNodes}
+              startingValue={10}
+              maxValue={200}
+              isStepped
+              stepSize={10}
+              leftIcon={<Users size={20} />}
+              rightIcon={<Users size={20} />}
+              onChange={setMaxNodes}
+            />
 
-            <div className="space-y-2">
-              <Label htmlFor="minCollabCount">Min Collaborations</Label>
-              <Input
-                id="minCollabCount"
-                type="number"
-                min="1"
-                max="10"
-                value={minCollabCount}
-                onChange={(e) => {
-                  const value = parseInt(e.target.value);
-                  if (!isNaN(value)) setMinCollabCount(value);
-                }}
-              />
-              <p className="text-xs text-muted-foreground">Filter by track count</p>
-            </div>
+            <ElasticSlider
+              label="Min Collaborations"
+              description="Filter by track count"
+              defaultValue={minCollabCount}
+              startingValue={1}
+              maxValue={10}
+              isStepped
+              stepSize={1}
+              leftIcon={<Minus size={20} />}
+              rightIcon={<Network size={20} />}
+              onChange={setMinCollabCount}
+            />
 
-            <div className="space-y-2">
-              <Label htmlFor="linkDistance">Link Distance</Label>
-              <Input
-                id="linkDistance"
-                type="number"
-                min="50"
-                max="500"
-                value={linkDistance}
-                onChange={(e) => {
-                  const value = parseInt(e.target.value);
-                  if (!isNaN(value)) setLinkDistance(value);
-                }}
-              />
-              <p className="text-xs text-muted-foreground">50-500 px</p>
-            </div>
+            <ElasticSlider
+              label="Link Distance"
+              description="50-500 px"
+              defaultValue={linkDistance}
+              startingValue={50}
+              maxValue={500}
+              isStepped
+              stepSize={10}
+              leftIcon={<Minus size={20} />}
+              rightIcon={<Network size={20} />}
+              onChange={setLinkDistance}
+            />
 
-            <div className="space-y-2">
-              <Label htmlFor="chargeStrength">Repulsion Strength</Label>
-              <Input
-                id="chargeStrength"
-                type="number"
-                min="-2000"
-                max="-50"
-                value={chargeStrength}
-                onChange={(e) => {
-                  const value = parseInt(e.target.value);
-                  if (!isNaN(value)) setChargeStrength(value);
-                }}
-              />
-              <p className="text-xs text-muted-foreground">-2000 to -50</p>
-            </div>
+            <ElasticSlider
+              label="Repulsion Strength"
+              description="-2000 to -50"
+              defaultValue={chargeStrength}
+              startingValue={-2000}
+              maxValue={-50}
+              isStepped
+              stepSize={50}
+              leftIcon={<Zap size={20} />}
+              rightIcon={<Zap size={20} />}
+              onChange={setChargeStrength}
+            />
           </div>
         </CardContent>
       </Card>
