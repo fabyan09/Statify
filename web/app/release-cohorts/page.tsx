@@ -6,6 +6,8 @@ import { Album } from "@/lib/types";
 import { useAlbums } from "@/lib/hooks";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { Badge } from "@/components/ui/badge";
+import { ReleasesByYearChart } from "./ReleasesByYearChart";
+import { ReleasesByMonthChart } from "./ReleasesByMonthChart";
 
 interface CohortData {
   period: string;
@@ -32,6 +34,9 @@ export default function ReleaseCohortsPage() {
   const yearlyData: CohortData[] = albums ? Object.entries(
     albums.reduce((acc, album) => {
       const year = album.release_date.split("-")[0];
+      // Skip invalid years (0000 or any year before 1900)
+      if (parseInt(year) < 1900) return acc;
+
       if (!acc[year]) {
         acc[year] = {
           period: year,
@@ -64,7 +69,13 @@ export default function ReleaseCohortsPage() {
   const monthlyData: CohortData[] = albums ? Object.entries(
     albums.reduce((acc, album) => {
       const [year, month] = album.release_date.split("-");
-      const yearMonth = `${year}-${month}`;
+      // Skip invalid years (before 1900)
+      if (parseInt(year) < 1900) return acc;
+
+      // If month is invalid or missing, default to January (01)
+      const validMonth = month && parseInt(month) >= 1 && parseInt(month) <= 12 ? month : "01";
+      const yearMonth = `${year}-${validMonth.padStart(2, '0')}`;
+
       if (!acc[yearMonth]) {
         acc[yearMonth] = {
           period: yearMonth,
@@ -91,8 +102,7 @@ export default function ReleaseCohortsPage() {
       albums: data.albums,
       compilations: data.compilations,
     }))
-    .sort((a, b) => a.period.localeCompare(b.period))
-    .slice(-36) : []; // Last 36 months
+    .sort((a, b) => a.period.localeCompare(b.period)) : [];
 
   // Top performing cohorts
   const topCohorts = [...yearlyData]
@@ -193,26 +203,7 @@ export default function ReleaseCohortsPage() {
 
         <TabsContent value="yearly" className="space-y-4">
           <div className="grid gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Releases by Year</CardTitle>
-                <CardDescription>Number of releases per year</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={350}>
-                  <BarChart data={yearlyData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="period" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey="singles" fill="#2563eb" name="Singles" stackId="a" />
-                    <Bar dataKey="albums" fill="#7c3aed" name="Albums" stackId="a" />
-                    <Bar dataKey="compilations" fill="#db2777" name="Compilations" stackId="a" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
+            <ReleasesByYearChart data={yearlyData} />
 
             <Card>
               <CardHeader>
@@ -242,32 +233,7 @@ export default function ReleaseCohortsPage() {
         </TabsContent>
 
         <TabsContent value="monthly" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Releases by Month</CardTitle>
-              <CardDescription>Monthly release patterns (last 36 months)</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={400}>
-                <BarChart data={monthlyData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis
-                    dataKey="period"
-                    angle={-45}
-                    textAnchor="end"
-                    height={100}
-                    tick={{ fontSize: 10 }}
-                  />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="singles" fill="#2563eb" name="Singles" stackId="a" />
-                  <Bar dataKey="albums" fill="#7c3aed" name="Albums" stackId="a" />
-                  <Bar dataKey="compilations" fill="#db2777" name="Compilations" stackId="a" />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
+          <ReleasesByMonthChart data={monthlyData} />
         </TabsContent>
       </Tabs>
 
