@@ -47,6 +47,9 @@ export interface TopArtist {
   popularity: number;
   followers: number;
   images: Array<{ url: string; height: number; width: number }>;
+  external_urls: {
+    spotify: string;
+  };
 }
 
 export async function fetchDashboardStats(): Promise<DashboardStats> {

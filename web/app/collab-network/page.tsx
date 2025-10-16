@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Artist, Track } from "@/lib/types";
+import { Artist } from "@/lib/types";
 import { useArtists, useTracks } from "@/lib/hooks";
 import { Badge } from "@/components/ui/badge";
-import Image from "next/image";
+import NextImage from "next/image";
 import dynamic from "next/dynamic";
+import ElasticSlider from "./ElasticSlider";
+import { Users, Minus, Network, Zap } from "lucide-react";
 
 // Dynamic import to avoid SSR issues with force-graph
 const ForceGraph2D = dynamic(() => import("react-force-graph-2d"), {
@@ -42,8 +44,17 @@ export default function CollabNetworkPage() {
   const error = artistsError || tracksError;
 
   const [selectedArtist, setSelectedArtist] = useState<Artist | null>(null);
+  const [highlightedNode, setHighlightedNode] = useState<string | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const graphRef = useRef<any>(null);
+  const imageCache = useRef<Map<string, HTMLImageElement>>(new Map());
+  const hasZoomedRef = useRef(false);
+
+  // Graph customization options
+  const [maxNodes, setMaxNodes] = useState(50);
+  const [linkDistance, setLinkDistance] = useState(150);
+  const [chargeStrength, setChargeStrength] = useState(-500);
+  const [minCollabCount, setMinCollabCount] = useState(1);
 
   // Calculate collaborations
   const { collaborations, topCollabs } = useMemo(() => {
@@ -70,14 +81,14 @@ export default function CollabNetworkPage() {
         const [artist1, artist2] = key.split("-");
         return { artist1, artist2, count };
       })
-      .filter((collab) => collab.count >= 1); // At least 1 collaboration
+      .filter((collab) => collab.count >= minCollabCount);
 
     const topCollabs = [...collaborations]
       .sort((a, b) => b.count - a.count)
       .slice(0, 10);
 
     return { collaborations, topCollabs };
-  }, [tracks]);
+  }, [tracks, minCollabCount]);
 
   // Build graph data
   const graphData = useMemo(() => {
@@ -106,7 +117,7 @@ export default function CollabNetworkPage() {
         } as GraphNode;
       })
       .filter((n): n is GraphNode => n !== null)
-      .slice(0, 50); // Limit to 50 nodes for performance
+      .slice(0, maxNodes);
 
     const nodeIds = new Set(nodes.map((n) => n.id));
     const links: GraphLink[] = collaborations
@@ -121,7 +132,7 @@ export default function CollabNetworkPage() {
       }));
 
     return { nodes, links };
-  }, [artists, collaborations]);
+  }, [artists, collaborations, maxNodes]);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleNodeClick = (node: any) => {
@@ -129,8 +140,30 @@ export default function CollabNetworkPage() {
     const artist = artists.find((a) => a._id === node.id);
     if (artist) {
       setSelectedArtist(artist);
+      setHighlightedNode(node.id === highlightedNode ? null : node.id);
     }
   };
+
+  const handleArtistSelect = (artist: Artist) => {
+    setSelectedArtist(artist);
+    setHighlightedNode(artist._id);
+  };
+
+  // Center graph on load and configure forces
+  useEffect(() => {
+    if (graphRef.current && graphData.nodes.length > 0) {
+      if (!hasZoomedRef.current) {
+        setTimeout(() => {
+          graphRef.current?.zoomToFit(600, 600);
+          hasZoomedRef.current = true;
+        }, 100);
+      }
+
+      // Configure link distance
+      graphRef.current?.d3Force('link')?.distance(linkDistance);
+      graphRef.current?.d3Force('charge')?.strength(chargeStrength);
+    }
+  }, [graphData, linkDistance, chargeStrength]);
 
   if (error) {
     return (
@@ -211,6 +244,69 @@ export default function CollabNetworkPage() {
         </Card>
       </div>
 
+      {/* Graph Customization */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Graph Settings</CardTitle>
+          <CardDescription>Customize the visualization parameters</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <ElasticSlider
+              label="Max Artists"
+              description="10-200 nodes"
+              defaultValue={maxNodes}
+              startingValue={10}
+              maxValue={200}
+              isStepped
+              stepSize={10}
+              leftIcon={<Users size={20} />}
+              rightIcon={<Users size={20} />}
+              onChange={setMaxNodes}
+            />
+
+            <ElasticSlider
+              label="Min Collaborations"
+              description="Filter by track count"
+              defaultValue={minCollabCount}
+              startingValue={1}
+              maxValue={10}
+              isStepped
+              stepSize={1}
+              leftIcon={<Minus size={20} />}
+              rightIcon={<Network size={20} />}
+              onChange={setMinCollabCount}
+            />
+
+            <ElasticSlider
+              label="Link Distance"
+              description="50-500 px"
+              defaultValue={linkDistance}
+              startingValue={50}
+              maxValue={500}
+              isStepped
+              stepSize={10}
+              leftIcon={<Minus size={20} />}
+              rightIcon={<Network size={20} />}
+              onChange={setLinkDistance}
+            />
+
+            <ElasticSlider
+              label="Repulsion Strength"
+              description="-2000 to -50"
+              defaultValue={chargeStrength}
+              startingValue={-2000}
+              maxValue={-50}
+              isStepped
+              stepSize={50}
+              leftIcon={<Zap size={20} />}
+              rightIcon={<Zap size={20} />}
+              onChange={setChargeStrength}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Graph and Details */}
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Graph */}
@@ -235,7 +331,16 @@ export default function CollabNetworkPage() {
                   nodeAutoColorBy="popularity"
                   nodeVal={(node: any) => node.popularity / 10}
                   linkWidth={(link: any) => Math.sqrt(link.value)}
-                  linkColor={() => "#ffffff"}
+                  d3VelocityDecay={0.3}
+                  linkColor={(link: any) => {
+                    if (!highlightedNode) return "#6b7280"; // Gris par défaut
+                    const linkSource = typeof link.source === 'object' ? link.source.id : link.source;
+                    const linkTarget = typeof link.target === 'object' ? link.target.id : link.target;
+                    if (linkSource === highlightedNode || linkTarget === highlightedNode) {
+                      return "#ffffff"; // Blanc pour les liens connectés au nœud sélectionné
+                    }
+                    return "#6b7280"; // Gris pour les autres
+                  }}
                   linkLabel={(link: any) =>
                     `${link.value} collaboration${link.value > 1 ? "s" : ""}`
                   }
@@ -246,23 +351,78 @@ export default function CollabNetworkPage() {
                   nodeCanvasObject={(node: any, ctx, globalScale) => {
                     const label = node.name;
                     const fontSize = 12 / globalScale;
-                    ctx.font = `${fontSize}px Sans-Serif`;
-                    const textWidth = ctx.measureText(label).width;
-                    const bckgDimensions = [textWidth, fontSize].map(
-                      (n) => n + fontSize * 0.2
-                    );
+                    const nodeRadius = Math.max(node.popularity / 10, 5);
 
-                    // Draw node
-                    ctx.fillStyle = node.color || "#2563eb";
-                    ctx.beginPath();
-                    ctx.arc(node.x, node.y, node.popularity / 10, 0, 2 * Math.PI);
-                    ctx.fill();
+                    // Draw node with image or fallback to circle
+                    if (node.image) {
+                      let img = imageCache.current.get(node.image);
+                      if (!img) {
+                        img = new Image();
+                        img.crossOrigin = "anonymous";
+                        img.src = node.image;
+                        imageCache.current.set(node.image, img);
+                      }
+
+                      if (img.complete) {
+                        ctx.save();
+                        ctx.beginPath();
+                        ctx.arc(node.x, node.y, nodeRadius, 0, 2 * Math.PI);
+                        ctx.closePath();
+                        ctx.clip();
+
+                        // Calculate aspect ratio to maintain image proportions
+                        const imgAspect = img.width / img.height;
+                        let drawWidth = nodeRadius * 2;
+                        let drawHeight = nodeRadius * 2;
+                        let offsetX = 0;
+                        let offsetY = 0;
+
+                        if (imgAspect > 1) {
+                          // Image is wider than tall
+                          drawWidth = drawHeight * imgAspect;
+                          offsetX = -(drawWidth - nodeRadius * 2) / 2;
+                        } else {
+                          // Image is taller than wide
+                          drawHeight = drawWidth / imgAspect;
+                          offsetY = -(drawHeight - nodeRadius * 2) / 2;
+                        }
+
+                        ctx.drawImage(
+                          img,
+                          node.x - nodeRadius + offsetX,
+                          node.y - nodeRadius + offsetY,
+                          drawWidth,
+                          drawHeight
+                        );
+                        ctx.restore();
+
+                        // Add border
+                        ctx.strokeStyle = "#ffffff";
+                        ctx.lineWidth = 2 / globalScale;
+                        ctx.beginPath();
+                        ctx.arc(node.x, node.y, nodeRadius, 0, 2 * Math.PI);
+                        ctx.stroke();
+                      } else {
+                        // Fallback while loading
+                        ctx.fillStyle = "#2563eb";
+                        ctx.beginPath();
+                        ctx.arc(node.x, node.y, nodeRadius, 0, 2 * Math.PI);
+                        ctx.fill();
+                      }
+                    } else {
+                      // Fallback if no image
+                      ctx.fillStyle = "#2563eb";
+                      ctx.beginPath();
+                      ctx.arc(node.x, node.y, nodeRadius, 0, 2 * Math.PI);
+                      ctx.fill();
+                    }
 
                     // Draw label
+                    ctx.font = `${fontSize}px Sans-Serif`;
                     ctx.textAlign = "center";
                     ctx.textBaseline = "middle";
                     ctx.fillStyle = "#ffffff";
-                    ctx.fillText(label, node.x, node.y + node.popularity / 10 + 10);
+                    ctx.fillText(label, node.x, node.y + nodeRadius + 10 / globalScale);
                   }}
                 />
                 {/* eslint-enable @typescript-eslint/no-explicit-any */}
@@ -286,7 +446,7 @@ export default function CollabNetworkPage() {
                 <div className="flex flex-col items-center gap-3">
                   <div className="relative h-32 w-32 rounded-full overflow-hidden bg-muted">
                     {selectedArtist.images[0]?.url ? (
-                      <Image
+                      <NextImage
                         src={selectedArtist.images[0].url}
                         alt={selectedArtist.name}
                         fill
@@ -341,6 +501,67 @@ export default function CollabNetworkPage() {
                     Open in Spotify
                   </a>
                 )}
+
+                {/* Collaborators List */}
+                {(() => {
+                  const artistCollabs = collaborations
+                    .filter(
+                      (c) =>
+                        c.artist1 === selectedArtist._id ||
+                        c.artist2 === selectedArtist._id
+                    )
+                    .map((c) => {
+                      const collabId =
+                        c.artist1 === selectedArtist._id ? c.artist2 : c.artist1;
+                      return {
+                        artist: artists.find((a) => a._id === collabId),
+                        count: c.count,
+                      };
+                    })
+                    .filter((c) => c.artist)
+                    .sort((a, b) => b.count - a.count);
+
+                  if (artistCollabs.length === 0) return null;
+
+                  return (
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Collaborators ({artistCollabs.length})
+                      </p>
+                      <div className="space-y-2 max-h-[200px] overflow-y-auto">
+                        {artistCollabs.map(({ artist, count }) => {
+                          if (!artist) return null;
+                          return (
+                            <div
+                              key={artist._id}
+                              onClick={() => handleArtistSelect(artist)}
+                              className="flex items-center gap-2 p-2 rounded-md hover:bg-muted/50 transition-colors cursor-pointer"
+                            >
+                              <div className="relative h-8 w-8 rounded-full overflow-hidden bg-muted flex-shrink-0">
+                                {artist.images[0]?.url && (
+                                  <NextImage
+                                    src={artist.images[0].url}
+                                    alt={artist.name}
+                                    fill
+                                    className="object-cover"
+                                  />
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium truncate">
+                                  {artist.name}
+                                </p>
+                              </div>
+                              <Badge variant="secondary" className="text-xs flex-shrink-0">
+                                {count}
+                              </Badge>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             ) : (
               <p className="text-sm text-muted-foreground text-center py-8">
@@ -379,7 +600,7 @@ export default function CollabNetworkPage() {
                     <div className="flex items-center gap-2">
                       <div className="relative h-10 w-10 rounded-full overflow-hidden bg-muted">
                         {artist1.images[0]?.url && (
-                          <Image
+                          <NextImage
                             src={artist1.images[0].url}
                             alt={artist1.name}
                             fill
@@ -391,7 +612,7 @@ export default function CollabNetworkPage() {
                       <span className="text-muted-foreground">×</span>
                       <div className="relative h-10 w-10 rounded-full overflow-hidden bg-muted">
                         {artist2.images[0]?.url && (
-                          <Image
+                          <NextImage
                             src={artist2.images[0].url}
                             alt={artist2.name}
                             fill

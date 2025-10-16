@@ -118,7 +118,7 @@ export class StatsService {
       .find()
       .sort({ popularity: -1 })
       .limit(limit)
-      .select('_id name popularity followers images')
+      .select('_id name popularity followers images external_urls')
       .exec();
 
     await this.cacheManager.set(cacheKey, topArtists);

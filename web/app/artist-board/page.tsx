@@ -6,7 +6,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Artist } from "@/lib/types";
 import { useArtists } from "@/lib/hooks";
 import { Search, ArrowUpDown, Users, ExternalLink } from "lucide-react";
 import Image from "next/image";
