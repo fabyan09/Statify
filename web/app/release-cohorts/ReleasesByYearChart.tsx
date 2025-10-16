@@ -191,7 +191,7 @@ export function ReleasesByYearChart({ data }: ReleasesByYearChartProps) {
               stroke="var(--color-singles)"
               stackId="a"
             />
-            <ChartLegend content={<ChartLegendContent />} />
+            <ChartLegend content={(props) => <ChartLegendContent payload={props.payload} verticalAlign={props.verticalAlign} />} />
           </AreaChart>
         </ChartContainer>
       </CardContent>

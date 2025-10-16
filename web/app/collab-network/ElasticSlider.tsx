@@ -137,6 +137,11 @@ const Slider: React.FC<SliderProps> = ({
     return ((value - startingValue) / totalRange) * 100;
   };
 
+  // Define transforms outside of conditional rendering
+  const opacityTransform = useTransform(scale, [1, 1.2], [0.7, 1]);
+  const leftIconX = useTransform(() => (region === 'left' ? -overflow.get() / scale.get() : 0));
+  const rightIconX = useTransform(() => (region === 'right' ? overflow.get() / scale.get() : 0));
+
   return (
     <>
       <motion.div
@@ -146,7 +151,7 @@ const Slider: React.FC<SliderProps> = ({
         onTouchEnd={() => animate(scale, 1)}
         style={{
           scale,
-          opacity: useTransform(scale, [1, 1.2], [0.7, 1])
+          opacity: opacityTransform
         }}
         className="slider-wrapper"
       >
@@ -157,7 +162,7 @@ const Slider: React.FC<SliderProps> = ({
               transition: { duration: 0.25 }
             }}
             style={{
-              x: useTransform(() => (region === 'left' ? -overflow.get() / scale.get() : 0))
+              x: leftIconX
             }}
             className="icon"
           >
@@ -208,7 +213,7 @@ const Slider: React.FC<SliderProps> = ({
               transition: { duration: 0.25 }
             }}
             style={{
-              x: useTransform(() => (region === 'right' ? overflow.get() / scale.get() : 0))
+              x: rightIconX
             }}
             className="icon"
           >

@@ -2,9 +2,8 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Album } from "@/lib/types";
 import { useAlbums } from "@/lib/hooks";
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { Badge } from "@/components/ui/badge";
 import { ReleasesByYearChart } from "./ReleasesByYearChart";
 import { ReleasesByMonthChart } from "./ReleasesByMonthChart";
@@ -55,7 +54,7 @@ export default function ReleaseCohortsPage() {
       return acc;
     }, {} as Record<string, CohortAccumulator>)
   )
-    .map(([_, data]) => ({
+    .map(([, data]) => ({
       period: data.period,
       releases: data.releases,
       avgPopularity: Math.round(data.totalPopularity / data.releases),
@@ -94,7 +93,7 @@ export default function ReleaseCohortsPage() {
       return acc;
     }, {} as Record<string, CohortAccumulator>)
   )
-    .map(([_, data]) => ({
+    .map(([, data]) => ({
       period: data.period,
       releases: data.releases,
       avgPopularity: Math.round(data.totalPopularity / data.releases),
