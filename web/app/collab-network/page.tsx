@@ -5,6 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Artist, Track } from "@/lib/types";
 import { useArtists, useTracks } from "@/lib/hooks";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import NextImage from "next/image";
 import dynamic from "next/dynamic";
 
@@ -48,6 +50,12 @@ export default function CollabNetworkPage() {
   const imageCache = useRef<Map<string, HTMLImageElement>>(new Map());
   const hasZoomedRef = useRef(false);
 
+  // Graph customization options
+  const [maxNodes, setMaxNodes] = useState(50);
+  const [linkDistance, setLinkDistance] = useState(150);
+  const [chargeStrength, setChargeStrength] = useState(-500);
+  const [minCollabCount, setMinCollabCount] = useState(1);
+
   // Calculate collaborations
   const { collaborations, topCollabs } = useMemo(() => {
     if (!tracks) return { collaborations: [], topCollabs: [] };
@@ -73,14 +81,14 @@ export default function CollabNetworkPage() {
         const [artist1, artist2] = key.split("-");
         return { artist1, artist2, count };
       })
-      .filter((collab) => collab.count >= 1); // At least 1 collaboration
+      .filter((collab) => collab.count >= minCollabCount);
 
     const topCollabs = [...collaborations]
       .sort((a, b) => b.count - a.count)
       .slice(0, 10);
 
     return { collaborations, topCollabs };
-  }, [tracks]);
+  }, [tracks, minCollabCount]);
 
   // Build graph data
   const graphData = useMemo(() => {
@@ -109,7 +117,7 @@ export default function CollabNetworkPage() {
         } as GraphNode;
       })
       .filter((n): n is GraphNode => n !== null)
-      .slice(0, 50); // Limit to 50 nodes for performance
+      .slice(0, maxNodes);
 
     const nodeIds = new Set(nodes.map((n) => n.id));
     const links: GraphLink[] = collaborations
@@ -124,7 +132,7 @@ export default function CollabNetworkPage() {
       }));
 
     return { nodes, links };
-  }, [artists, collaborations]);
+  }, [artists, collaborations, maxNodes]);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleNodeClick = (node: any) => {
@@ -152,10 +160,10 @@ export default function CollabNetworkPage() {
       }
 
       // Configure link distance
-      graphRef.current?.d3Force('link')?.distance(150);
-      graphRef.current?.d3Force('charge')?.strength(-500);
+      graphRef.current?.d3Force('link')?.distance(linkDistance);
+      graphRef.current?.d3Force('charge')?.strength(chargeStrength);
     }
-  }, [graphData]);
+  }, [graphData, linkDistance, chargeStrength]);
 
   if (error) {
     return (
@@ -235,6 +243,81 @@ export default function CollabNetworkPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Graph Customization */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Graph Settings</CardTitle>
+          <CardDescription>Customize the visualization parameters</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <div className="space-y-2">
+              <Label htmlFor="maxNodes">Max Artists</Label>
+              <Input
+                id="maxNodes"
+                type="number"
+                min="10"
+                max="200"
+                value={maxNodes}
+                onChange={(e) => {
+                  const value = parseInt(e.target.value);
+                  if (!isNaN(value)) setMaxNodes(value);
+                }}
+              />
+              <p className="text-xs text-muted-foreground">10-200 nodes</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="minCollabCount">Min Collaborations</Label>
+              <Input
+                id="minCollabCount"
+                type="number"
+                min="1"
+                max="10"
+                value={minCollabCount}
+                onChange={(e) => {
+                  const value = parseInt(e.target.value);
+                  if (!isNaN(value)) setMinCollabCount(value);
+                }}
+              />
+              <p className="text-xs text-muted-foreground">Filter by track count</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="linkDistance">Link Distance</Label>
+              <Input
+                id="linkDistance"
+                type="number"
+                min="50"
+                max="500"
+                value={linkDistance}
+                onChange={(e) => {
+                  const value = parseInt(e.target.value);
+                  if (!isNaN(value)) setLinkDistance(value);
+                }}
+              />
+              <p className="text-xs text-muted-foreground">50-500 px</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="chargeStrength">Repulsion Strength</Label>
+              <Input
+                id="chargeStrength"
+                type="number"
+                min="-2000"
+                max="-50"
+                value={chargeStrength}
+                onChange={(e) => {
+                  const value = parseInt(e.target.value);
+                  if (!isNaN(value)) setChargeStrength(value);
+                }}
+              />
+              <p className="text-xs text-muted-foreground">-2000 to -50</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Graph and Details */}
       <div className="grid gap-6 lg:grid-cols-3">

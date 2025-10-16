@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useDashboardStats, useTopArtists } from "@/lib/hooks";
 import { Users, Disc, Music, TrendingUp } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 
 export function DashboardContent() {
   const { data: stats, isLoading: statsLoading, error: statsError } = useDashboardStats();
@@ -128,8 +129,18 @@ export function DashboardContent() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Album Types</CardTitle>
-            <CardDescription>Distribution of album types</CardDescription>
+            <div className="flex items-start justify-between">
+              <div>
+                <CardTitle>Album Types</CardTitle>
+                <CardDescription>Distribution of album types</CardDescription>
+              </div>
+              <Link
+                href="/release-cohorts"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                See More...
+              </Link>
+            </div>
           </CardHeader>
           <CardContent className="space-y-2">
             {Object.entries(stats.albumTypes).map(([type, count]) => (
@@ -145,8 +156,18 @@ export function DashboardContent() {
       {/* Top Artists */}
       <Card>
         <CardHeader>
-          <CardTitle>Top 10 Most Popular Artists</CardTitle>
-          <CardDescription>Based on Spotify popularity score</CardDescription>
+          <div className="flex items-start justify-between">
+            <div>
+              <CardTitle>Top 10 Most Popular Artists</CardTitle>
+              <CardDescription>Based on Spotify popularity score</CardDescription>
+            </div>
+            <Link
+              href="/artist-board"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              See More...
+            </Link>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-5">
@@ -167,7 +188,14 @@ export function DashboardContent() {
                   )}
                 </div>
                 <div className="text-center">
-                  <p className="font-semibold text-sm line-clamp-2">{artist.name}</p>
+                  <a
+                    href={artist.external_urls.spotify}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-semibold text-sm line-clamp-2 hover:underline cursor-pointer"
+                  >
+                    {artist.name}
+                  </a>
                   <p className="text-xs text-muted-foreground">
                     {artist.popularity}/100
                   </p>
