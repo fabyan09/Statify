@@ -6,43 +6,90 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useTracks, useAlbums } from "@/lib/hooks";
-import { ExternalLink, Search } from "lucide-react";
+import { useTracks, useAlbums, useArtists } from "@/lib/hooks";
+import { ExternalLink, Search, ArrowUpDown } from "lucide-react";
 import Image from "next/image";
+
+type SortField = "name" | "artist" | "album" | "duration_ms" | "popularity";
+type SortDirection = "asc" | "desc";
 
 export default function TrackExplorerPage() {
   const { data: tracks, isLoading: tracksLoading, error: tracksError } = useTracks();
   const { data: albums, isLoading: albumsLoading, error: albumsError } = useAlbums();
+  const { data: artists, isLoading: artistsLoading, error: artistsError } = useArtists();
 
-  const isLoading = tracksLoading || albumsLoading;
-  const error = tracksError || albumsError;
+  const isLoading = tracksLoading || albumsLoading || artistsLoading;
+  const error = tracksError || albumsError || artistsError;
 
   const [searchTerm, setSearchTerm] = useState("");
   const [explicitFilter, setExplicitFilter] = useState<string>("all");
   const [durationFilter, setDurationFilter] = useState<string>("all");
+  const [sortField, setSortField] = useState<SortField>("popularity");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
 
-  // Create album lookup
+  // Create album and artist lookups
   const albumMap = albums ? new Map(albums.map((album) => [album._id, album])) : new Map();
+  const artistMap = artists ? new Map(artists.map((artist) => [artist._id, artist])) : new Map();
 
-  // Filter tracks
-  const filteredTracks = (tracks || []).filter((track) => {
-    const matchesSearch =
-      track.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      albumMap.get(track.album_id)?.name.toLowerCase().includes(searchTerm.toLowerCase());
+  // Filter and sort tracks
+  const filteredAndSortedTracks = (tracks || [])
+    .filter((track) => {
+      const matchesSearch =
+        track.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        albumMap.get(track.album_id)?.name.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesExplicit =
-      explicitFilter === "all" ||
-      (explicitFilter === "explicit" && track.explicit) ||
-      (explicitFilter === "clean" && !track.explicit);
+      const matchesExplicit =
+        explicitFilter === "all" ||
+        (explicitFilter === "explicit" && track.explicit) ||
+        (explicitFilter === "clean" && !track.explicit);
 
-    const matchesDuration =
-      durationFilter === "all" ||
-      (durationFilter === "short" && track.duration_ms < 180000) ||
-      (durationFilter === "medium" && track.duration_ms >= 180000 && track.duration_ms < 300000) ||
-      (durationFilter === "long" && track.duration_ms >= 300000);
+      const matchesDuration =
+        durationFilter === "all" ||
+        (durationFilter === "short" && track.duration_ms < 180000) ||
+        (durationFilter === "medium" && track.duration_ms >= 180000 && track.duration_ms < 300000) ||
+        (durationFilter === "long" && track.duration_ms >= 300000);
 
-    return matchesSearch && matchesExplicit && matchesDuration;
-  });
+      return matchesSearch && matchesExplicit && matchesDuration;
+    })
+    .sort((a, b) => {
+      let aValue: string | number;
+      let bValue: string | number;
+
+      if (sortField === "artist") {
+        // Get the first artist name for sorting
+        const aArtistName = a.artist_ids[0] ? artistMap.get(a.artist_ids[0])?.name || "" : "";
+        const bArtistName = b.artist_ids[0] ? artistMap.get(b.artist_ids[0])?.name || "" : "";
+        aValue = aArtistName;
+        bValue = bArtistName;
+      } else if (sortField === "album") {
+        aValue = albumMap.get(a.album_id)?.name || "";
+        bValue = albumMap.get(b.album_id)?.name || "";
+      } else {
+        aValue = a[sortField];
+        bValue = b[sortField];
+      }
+
+      if (typeof aValue === "string" && typeof bValue === "string") {
+        return sortDirection === "asc"
+          ? aValue.localeCompare(bValue)
+          : bValue.localeCompare(aValue);
+      }
+
+      if (typeof aValue === "number" && typeof bValue === "number") {
+        return sortDirection === "asc" ? aValue - bValue : bValue - aValue;
+      }
+
+      return 0;
+    });
+
+  function handleSort(field: SortField) {
+    if (sortField === field) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("desc");
+    }
+  }
 
   function formatDuration(ms: number): string {
     const minutes = Math.floor(ms / 60000);
@@ -70,7 +117,7 @@ export default function TrackExplorerPage() {
     );
   }
 
-  if (isLoading || !tracks || !albums) {
+  if (isLoading || !tracks || !albums || !artists) {
     return (
       <div className="flex items-center justify-center h-[50vh]">
         <div className="text-center space-y-4">
@@ -136,32 +183,76 @@ export default function TrackExplorerPage() {
       <Card>
         <CardHeader>
           <CardTitle>
-            Tracks ({filteredTracks.length.toLocaleString()})
+            Tracks ({filteredAndSortedTracks.length.toLocaleString()})
           </CardTitle>
           <CardDescription>
-            {filteredTracks.length === tracks.length
+            {filteredAndSortedTracks.length === tracks.length
               ? "Showing all tracks"
-              : `Showing ${filteredTracks.length} of ${tracks.length} tracks`}
+              : `Showing ${filteredAndSortedTracks.length} of ${tracks.length} tracks`}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[50px]"></TableHead>
-                <TableHead>Track</TableHead>
-                <TableHead>Album</TableHead>
-                <TableHead>Duration</TableHead>
-                <TableHead>Popularity</TableHead>
+                <TableHead className="w-[60px]"></TableHead>
+                <TableHead className="w-[250px]">
+                  <button
+                    className="flex items-center gap-1 hover:text-primary"
+                    onClick={() => handleSort("name")}
+                  >
+                    Track
+                    {sortField === "name" && <ArrowUpDown className="h-4 w-4" />}
+                  </button>
+                </TableHead>
+                <TableHead className="w-[200px]">
+                  <button
+                    className="flex items-center gap-1 hover:text-primary"
+                    onClick={() => handleSort("artist")}
+                  >
+                    Artist
+                    {sortField === "artist" && <ArrowUpDown className="h-4 w-4" />}
+                  </button>
+                </TableHead>
+                <TableHead className="w-[200px]">
+                  <button
+                    className="flex items-center gap-1 hover:text-primary"
+                    onClick={() => handleSort("album")}
+                  >
+                    Album
+                    {sortField === "album" && <ArrowUpDown className="h-4 w-4" />}
+                  </button>
+                </TableHead>
+                <TableHead className="w-[100px]">
+                  <button
+                    className="flex items-center gap-1 hover:text-primary"
+                    onClick={() => handleSort("duration_ms")}
+                  >
+                    Duration
+                    {sortField === "duration_ms" && <ArrowUpDown className="h-4 w-4" />}
+                  </button>
+                </TableHead>
+                <TableHead className="w-[120px]">
+                  <button
+                    className="flex items-center gap-1 hover:text-primary"
+                    onClick={() => handleSort("popularity")}
+                  >
+                    Popularity
+                    {sortField === "popularity" && <ArrowUpDown className="h-4 w-4" />}
+                  </button>
+                </TableHead>
                 <TableHead className="w-[100px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredTracks.slice(0, 100).map((track) => {
+              {filteredAndSortedTracks.slice(0, 100).map((track) => {
                 const album = albumMap.get(track.album_id);
+                const trackArtists = track.artist_ids.map((id) => artistMap.get(id)).filter(Boolean);
+                const artistNames = trackArtists.map((artist) => artist?.name).join(", ") || "Unknown Artist";
+                const albumName = album?.name || "Unknown Album";
                 return (
                   <TableRow key={track._id}>
-                    <TableCell>
+                    <TableCell className="w-[60px]">
                       <div className="relative h-10 w-10 rounded overflow-hidden bg-muted">
                         {album?.images[0]?.url ? (
                           <Image
@@ -175,9 +266,14 @@ export default function TrackExplorerPage() {
                         )}
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="w-[250px]">
                       <div className="flex flex-col">
-                        <span className="font-medium">{track.name}</span>
+                        <span
+                          className="font-medium truncate block"
+                          title={track.name}
+                        >
+                          {track.name}
+                        </span>
                         <div className="flex gap-1 mt-1">
                           {track.explicit && (
                             <Badge variant="secondary" className="text-xs">
@@ -187,16 +283,27 @@ export default function TrackExplorerPage() {
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell>
-                      <span className="text-sm text-muted-foreground">
-                        {album?.name || "Unknown Album"}
+                    <TableCell className="w-[200px]">
+                      <span
+                        className="text-sm block truncate"
+                        title={artistNames}
+                      >
+                        {artistNames}
                       </span>
                     </TableCell>
-                    <TableCell>{formatDuration(track.duration_ms)}</TableCell>
-                    <TableCell>
+                    <TableCell className="w-[200px]">
+                      <span
+                        className="text-sm text-muted-foreground block truncate"
+                        title={albumName}
+                      >
+                        {albumName}
+                      </span>
+                    </TableCell>
+                    <TableCell className="w-[100px]">{formatDuration(track.duration_ms)}</TableCell>
+                    <TableCell className="w-[120px]">
                       <Badge variant="outline">{track.popularity}/100</Badge>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="w-[100px]">
                       <a
                         href={track.external_urls.spotify}
                         target="_blank"
@@ -212,7 +319,7 @@ export default function TrackExplorerPage() {
               })}
             </TableBody>
           </Table>
-          {filteredTracks.length > 100 && (
+          {filteredAndSortedTracks.length > 100 && (
             <p className="text-sm text-muted-foreground text-center mt-4">
               Showing first 100 results. Use filters to narrow down your search.
             </p>
