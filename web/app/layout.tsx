@@ -3,6 +3,8 @@ import { Plus_Jakarta_Sans, Lora, Roboto_Mono } from "next/font/google";
 import "./globals.css";
 import { Navigation } from "@/components/navigation";
 import { QueryProvider } from "@/components/providers/query-provider";
+import { AuthProvider } from "@/contexts/auth-context";
+import AnimatedShaderBackground from "@/components/animated-shader-background";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   variable: "--font-sans",
@@ -34,11 +36,14 @@ export default function RootLayout({
       <body
         className={`${plusJakartaSans.variable} ${lora.variable} ${robotoMono.variable} font-sans antialiased dark`}
       >
+        <AnimatedShaderBackground />
         <QueryProvider>
-          <Navigation />
-          <main className="container mx-auto p-8">
-            {children}
-          </main>
+          <AuthProvider>
+            <Navigation />
+            <main className="container mx-auto p-8">
+              {children}
+            </main>
+          </AuthProvider>
         </QueryProvider>
       </body>
     </html>
