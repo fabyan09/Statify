@@ -6,8 +6,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useTracks, useAlbums, useArtists } from "@/lib/hooks";
-import { ExternalLink, Search, ArrowUpDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { useTracks, useAlbums, useArtists, usePlaylists, useUser, useAddToLibrary, useRemoveFromLibrary, useAddTracksToPlaylist } from "@/lib/hooks";
+import { ExternalLink, Search, ArrowUpDown, Heart, Plus } from "lucide-react";
 import Image from "next/image";
 
 type SortField = "name" | "artist" | "album" | "duration_ms" | "popularity";
@@ -17,6 +19,15 @@ export default function TrackExplorerPage() {
   const { data: tracks, isLoading: tracksLoading, error: tracksError } = useTracks();
   const { data: albums, isLoading: albumsLoading, error: albumsError } = useAlbums();
   const { data: artists, isLoading: artistsLoading, error: artistsError } = useArtists();
+  const { data: playlists } = usePlaylists();
+
+  // TODO: Replace with actual authenticated user ID
+  const DEMO_USER_ID = "demo-user";
+  const { data: user } = useUser(DEMO_USER_ID);
+
+  const addToLibrary = useAddToLibrary();
+  const removeFromLibrary = useRemoveFromLibrary();
+  const addTracksToPlaylist = useAddTracksToPlaylist();
 
   const isLoading = tracksLoading || albumsLoading || artistsLoading;
   const error = tracksError || albumsError || artistsError;
@@ -26,6 +37,9 @@ export default function TrackExplorerPage() {
   const [durationFilter, setDurationFilter] = useState<string>("all");
   const [sortField, setSortField] = useState<SortField>("popularity");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+  const [selectedPlaylistId, setSelectedPlaylistId] = useState<string>("");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedTrackId, setSelectedTrackId] = useState<string>("");
 
   // Create album and artist lookups
   const albumMap = albums ? new Map(albums.map((album) => [album._id, album])) : new Map();
@@ -95,6 +109,38 @@ export default function TrackExplorerPage() {
     const minutes = Math.floor(ms / 60000);
     const seconds = Math.floor((ms % 60000) / 1000);
     return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+  }
+
+  function isTrackLiked(trackId: string): boolean {
+    return user?.liked_tracks?.includes(trackId) || false;
+  }
+
+  function handleLikeToggle(trackId: string) {
+    if (isTrackLiked(trackId)) {
+      removeFromLibrary.mutate({ userId: DEMO_USER_ID, data: { track_id: trackId } });
+    } else {
+      addToLibrary.mutate({ userId: DEMO_USER_ID, data: { track_id: trackId } });
+    }
+  }
+
+  function handleOpenPlaylistDialog(trackId: string) {
+    setSelectedTrackId(trackId);
+    setDialogOpen(true);
+  }
+
+  function handleAddToPlaylist() {
+    if (selectedPlaylistId && selectedTrackId) {
+      addTracksToPlaylist.mutate(
+        { playlistId: selectedPlaylistId, trackIds: [selectedTrackId] },
+        {
+          onSuccess: () => {
+            setDialogOpen(false);
+            setSelectedPlaylistId("");
+            setSelectedTrackId("");
+          },
+        }
+      );
+    }
   }
 
   if (error) {
@@ -241,6 +287,7 @@ export default function TrackExplorerPage() {
                     {sortField === "popularity" && <ArrowUpDown className="h-4 w-4" />}
                   </button>
                 </TableHead>
+                <TableHead className="w-[80px]">Actions</TableHead>
                 <TableHead className="w-[100px]"></TableHead>
               </TableRow>
             </TableHeader>
@@ -303,6 +350,25 @@ export default function TrackExplorerPage() {
                     <TableCell className="w-[120px]">
                       <Badge variant="outline">{track.popularity}/100</Badge>
                     </TableCell>
+                    <TableCell className="w-[80px]">
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          onClick={() => handleLikeToggle(track._id)}
+                          className={isTrackLiked(track._id) ? "text-red-500 hover:text-red-600" : ""}
+                        >
+                          <Heart className={isTrackLiked(track._id) ? "h-4 w-4 fill-current" : "h-4 w-4"} />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          onClick={() => handleOpenPlaylistDialog(track._id)}
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
                     <TableCell className="w-[100px]">
                       <a
                         href={track.external_urls.spotify}
@@ -326,6 +392,49 @@ export default function TrackExplorerPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Add to Playlist Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add to Playlist</DialogTitle>
+            <DialogDescription>
+              Select a playlist to add this track to.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Select value={selectedPlaylistId} onValueChange={setSelectedPlaylistId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a playlist" />
+              </SelectTrigger>
+              <SelectContent>
+                {playlists && playlists.length > 0 ? (
+                  playlists.map((playlist) => (
+                    <SelectItem key={playlist._id} value={playlist._id}>
+                      {playlist.name}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <SelectItem value="no-playlists" disabled>
+                    No playlists available
+                  </SelectItem>
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAddToPlaylist}
+              disabled={!selectedPlaylistId || addTracksToPlaylist.isPending}
+            >
+              {addTracksToPlaylist.isPending ? "Adding..." : "Add to Playlist"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
