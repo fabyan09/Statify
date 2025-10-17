@@ -8,6 +8,8 @@ import { ArtistsModule } from './artists/artists.module';
 import { AlbumsModule } from './albums/albums.module';
 import { TracksModule } from './tracks/tracks.module';
 import { StatsModule } from './stats/stats.module';
+import { UsersModule } from './users/users.module';
+import { PlaylistsModule } from './playlists/playlists.module';
 
 @Module({
   imports: [
@@ -24,6 +26,8 @@ import { StatsModule } from './stats/stats.module';
     AlbumsModule,
     TracksModule,
     StatsModule,
+    UsersModule,
+    PlaylistsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
