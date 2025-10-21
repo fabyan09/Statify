@@ -275,8 +275,8 @@ export default function DiscoverPage() {
         .filter(track => {
           const trackArtistGenres = track.artist_ids
             .map(id => artistMap.get(id))
-            .filter(Boolean)
-            .flatMap(artist => artist!.genres);
+            .filter((artist): artist is Artist => artist !== undefined)
+            .flatMap(artist => artist.genres);
 
           return !userLikedTracks.includes(track._id) &&
             trackArtistGenres.some(genre => favoriteGenres.has(genre));
@@ -593,7 +593,7 @@ export default function DiscoverPage() {
                     const album = item as Album;
                     const albumArtists = album.artist_ids
                       .map(id => artistMap.get(id))
-                      .filter(Boolean);
+                      .filter((artist): artist is Artist => artist !== undefined);
 
                     return (
                       <Card key={album._id} className="!bg-background/10 overflow-hidden hover:border-purple-500 hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
@@ -660,7 +660,7 @@ export default function DiscoverPage() {
                     const trackAlbum = albumMap.get(track.album_id);
                     const trackArtists = track.artist_ids
                       .map(id => artistMap.get(id))
-                      .filter(Boolean);
+                      .filter((artist): artist is Artist => artist !== undefined);
 
                     return (
                       <Card key={track._id} className="!bg-background/10 hover:border-purple-500 hover:shadow-md transition-all duration-300">
