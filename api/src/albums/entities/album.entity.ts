@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument } from 'mongoose';
+import { HydratedDocument, Schema as MongooseSchema } from 'mongoose';
 
 export type AlbumDocument = HydratedDocument<Album>;
 
@@ -62,7 +62,7 @@ export class Album {
   @Prop({ required: true })
   label: string;
 
-  @Prop({ type: [String], default: [] })
+  @Prop({ type: [{ type: MongooseSchema.Types.String, ref: 'Artist' }], default: [] })
   artist_ids: string[];
 
   @Prop({ type: [String], default: [] })

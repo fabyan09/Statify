@@ -185,3 +185,15 @@ export function useSyncAlbumTracks() {
     },
   });
 }
+
+export function useSearch(
+  query: string,
+  type: 'tracks' | 'albums' | 'artists' | 'playlists' | 'users',
+  params?: PaginationParams
+) {
+  return useQuery({
+    queryKey: ["search", query, type, params?.page, params?.limit],
+    queryFn: () => search(query, type, params),
+    enabled: !!query && query.trim().length > 0,
+  });
+}
