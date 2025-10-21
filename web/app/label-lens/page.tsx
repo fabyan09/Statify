@@ -228,7 +228,7 @@ export default function LabelLensPage() {
                 />
                 <ChartTooltip
                   cursor={false}
-                  content={<ChartTooltipContent hideLabel />}
+                  content={<ChartTooltipContent />}
                 />
                 <Bar dataKey="avgPopularity" fill="var(--color-avgPopularity)" radius={8} />
               </BarChart>
