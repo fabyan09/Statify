@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { Home, Network, Tag, Calendar, Search, Heart, ListMusic, LogOut, User } from "lucide-react";
+import { Home, Network, Tag, Calendar, Search, Heart, ListMusic, LogOut, User, Sparkles } from "lucide-react";
 import Image from "next/image";
 import { useAuth } from "@/contexts/auth-context";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 const routes = [
   { href: "/", label: "Home", icon: Home },
   { href: "/search", label: "Search", icon: Search },
+  { href: "/discover", label: "Discover", icon: Sparkles },
   { href: "/collab-network", label: "Collab Network", icon: Network },
   { href: "/label-lens", label: "Label Lens", icon: Tag },
   { href: "/release-cohorts", label: "Release Cohorts", icon: Calendar },

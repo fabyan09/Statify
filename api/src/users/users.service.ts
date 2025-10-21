@@ -131,4 +131,20 @@ export class UsersService {
       favorite_artists: user.favorite_artists,
     };
   }
+
+  async login(username: string, password: string): Promise<User> {
+    const user = await this.userModel.findOne({ username }).exec();
+
+    if (!user) {
+      throw new NotFoundException('Invalid username or password');
+    }
+
+    // In production, use bcrypt to compare hashed passwords
+    // For now, direct comparison (NOT SECURE for production)
+    if (user.password !== password) {
+      throw new NotFoundException('Invalid username or password');
+    }
+
+    return user;
+  }
 }

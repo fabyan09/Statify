@@ -12,6 +12,7 @@ import {
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { LoginUserDto } from './dto/login-user.dto';
 import { AddToLibraryDto, RemoveFromLibraryDto } from './dto/update-library.dto';
 import { PaginationDto } from '../common/dto/pagination.dto';
 
@@ -22,6 +23,11 @@ export class UsersController {
   @Post()
   create(@Body() createUserDto: CreateUserDto) {
     return this.usersService.create(createUserDto);
+  }
+
+  @Post('login')
+  login(@Body() loginUserDto: LoginUserDto) {
+    return this.usersService.login(loginUserDto.username, loginUserDto.password);
   }
 
   @Get()

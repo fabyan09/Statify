@@ -14,7 +14,7 @@ import { Music } from "lucide-react";
 
 export default function AuthPage() {
   const router = useRouter();
-  const { login } = useAuth();
+  const { user: currentUser, login, logout } = useAuth();
 
   const [loginUsername, setLoginUsername] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
@@ -29,24 +29,14 @@ export default function AuthPage() {
   // Login mutation
   const loginMutation = useMutation({
     mutationFn: async (credentials: { username: string; password: string }) => {
-      // Get all users and find matching username
-      const usersResult = await userApi.getAll({ limit: 1000 });
-      const user = usersResult.data.find(u => u.username === credentials.username);
-
-      if (!user) {
-        throw new Error("User not found");
-      }
-
-      // In production, password should be checked on backend
-      // For now, we just return the user
-      return user;
+      return userApi.login(credentials);
     },
     onSuccess: (user) => {
       login(user);
       router.push("/");
     },
     onError: (error: unknown) => {
-      const message = error instanceof Error ? error.message : "Login failed";
+      const message = error instanceof Error ? error.message : "Invalid username or password";
       setLoginError(message);
     },
   });
@@ -94,9 +84,56 @@ export default function AuthPage() {
     signupMutation.mutate({ username: signupUsername, password: signupPassword });
   };
 
+  const handleLogout = () => {
+    logout();
+    router.push("/");
+  };
+
+  // Si l'utilisateur est déjà connecté, afficher un message
+  if (currentUser) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <Card className="w-full max-w-md !bg-background/10">
+          <CardHeader className="text-center">
+            <div className="flex justify-center mb-4">
+              <div className="p-3 bg-gradient-to-br from-green-500 to-blue-600 rounded-xl">
+                <Music className="h-8 w-8 text-white" />
+              </div>
+            </div>
+            <CardTitle className="text-3xl">Déjà connecté</CardTitle>
+            <CardDescription>
+              Vous êtes actuellement connecté en tant que <strong>{currentUser.username}</strong>
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-center text-muted-foreground">
+              Pour vous connecter à un autre compte, veuillez d'abord vous déconnecter.
+            </p>
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => router.push("/")}
+              >
+                Retour au Dashboard
+              </Button>
+              <Button
+                variant="default"
+                className="flex-1"
+                onClick={handleLogout}
+              >
+                Se déconnecter
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-md !bg-background/10">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
             <div className="p-3 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl">
