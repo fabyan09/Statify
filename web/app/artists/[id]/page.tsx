@@ -141,7 +141,7 @@ export default function ArtistDetailPage() {
           <CardHeader>
             <CardTitle>Artist Not Found</CardTitle>
             <CardDescription>
-              The artist you're looking for doesn't exist.
+              The artist you&apos;re looking for doesn&apos;t exist.
             </CardDescription>
           </CardHeader>
           <CardContent>

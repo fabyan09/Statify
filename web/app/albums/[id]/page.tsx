@@ -156,7 +156,7 @@ export default function AlbumDetailPage() {
           <CardHeader>
             <CardTitle>Album Not Found</CardTitle>
             <CardDescription>
-              The album you're looking for doesn't exist.
+              The album you&apos;re looking for doesn&apos;t exist.
             </CardDescription>
           </CardHeader>
           <CardContent>

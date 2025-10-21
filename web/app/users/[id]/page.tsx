@@ -22,7 +22,7 @@ import {
   useAddTracksToPlaylist,
 } from "@/lib/hooks";
 import { useAuth } from "@/contexts/auth-context";
-import { ExternalLink, Heart, Plus, ArrowLeft, User, ListMusic, Music } from "lucide-react";
+import { ExternalLink, Heart, Plus, ArrowLeft, User, ListMusic } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -119,7 +119,7 @@ export default function UserProfilePage() {
           <CardHeader>
             <CardTitle>User Not Found</CardTitle>
             <CardDescription>
-              The user you're looking for doesn't exist.
+              The user you&apos;re looking for doesn&apos;t exist.
             </CardDescription>
           </CardHeader>
           <CardContent>
