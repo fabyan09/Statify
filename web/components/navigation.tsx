@@ -3,18 +3,17 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { Home, Network, Tag, Calendar, Users, Music, Heart, ListMusic, LogOut, User } from "lucide-react";
+import { Home, Network, Tag, Calendar, Search, Heart, ListMusic, LogOut, User } from "lucide-react";
 import Image from "next/image";
 import { useAuth } from "@/contexts/auth-context";
 import { Button } from "@/components/ui/button";
 
 const routes = [
   { href: "/", label: "Home", icon: Home },
+  { href: "/search", label: "Search", icon: Search },
   { href: "/collab-network", label: "Collab Network", icon: Network },
   { href: "/label-lens", label: "Label Lens", icon: Tag },
   { href: "/release-cohorts", label: "Release Cohorts", icon: Calendar },
-  { href: "/artist-board", label: "Artist Board", icon: Users },
-  { href: "/track-explorer", label: "Track Explorer", icon: Music },
   { href: "/library", label: "Library", icon: Heart },
   { href: "/playlists", label: "Playlists", icon: ListMusic },
 ];
