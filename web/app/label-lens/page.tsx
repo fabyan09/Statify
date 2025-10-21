@@ -195,7 +195,7 @@ export default function LabelLensPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {(tracks.length / labelStats.length).toFixed(1)}
+              {(labelStats.reduce((acc, stat) => acc + stat.trackCount, 0) / labelStats.length).toFixed(1)}
             </div>
           </CardContent>
         </Card>
