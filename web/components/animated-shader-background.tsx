@@ -128,7 +128,7 @@ const AnimatedShaderBackground = () => {
   }, []);
 
   return (
-    <div ref={containerRef} className="fixed inset-0 -z-10 opacity-50" />
+    <div ref={containerRef} className="fixed inset-0 -z-10 opacity-70" />
   );
 };
 

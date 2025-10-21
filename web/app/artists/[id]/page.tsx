@@ -140,7 +140,7 @@ export default function ArtistDetailPage() {
   if (!artist) {
     return (
       <div className="flex items-center justify-center h-[50vh]">
-        <Card className="w-full max-w-md">
+        <Card className="w-full max-w-md !bg-background/10">
           <CardHeader>
             <CardTitle>Artist Not Found</CardTitle>
             <CardDescription>
@@ -171,7 +171,7 @@ export default function ArtistDetailPage() {
       </Link>
 
       {/* Artist Header */}
-      <Card>
+      <Card className="!bg-background/10">
         <CardContent className="p-6">
           <div className="flex flex-col md:flex-row gap-6">
             {/* Artist Image */}
@@ -248,19 +248,19 @@ export default function ArtistDetailPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
+        <Card className="!bg-background/10">
           <CardContent className="p-6 text-center">
             <div className="text-3xl font-bold">{artistAlbums.length}</div>
             <div className="text-sm text-muted-foreground">Releases</div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="!bg-background/10">
           <CardContent className="p-6 text-center">
             <div className="text-3xl font-bold">{artistTracks.length}</div>
             <div className="text-sm text-muted-foreground">Tracks</div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="!bg-background/10">
           <CardContent className="p-6 text-center">
             <div className="text-3xl font-bold">{artist.popularity}</div>
             <div className="text-sm text-muted-foreground">Popularity</div>
@@ -277,7 +277,7 @@ export default function ArtistDetailPage() {
 
         {/* Popular Tracks Tab */}
         <TabsContent value="tracks">
-          <Card>
+          <Card className="!bg-background/10">
             <CardHeader>
               <CardTitle>Popular Tracks</CardTitle>
               <CardDescription>
@@ -394,7 +394,7 @@ export default function ArtistDetailPage() {
 
         {/* Releases Tab */}
         <TabsContent value="releases">
-          <Card>
+          <Card className="!bg-background/10">
             <CardHeader>
               <CardTitle>Releases</CardTitle>
               <CardDescription>
@@ -404,7 +404,7 @@ export default function ArtistDetailPage() {
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                 {artistAlbums.map((album) => (
-                  <Card key={album._id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                  <Card key={album._id} className="overflow-hidden hover:shadow-lg transition-shadow !bg-background/10">
                     <Link href={`/albums/${album._id}`}>
                       <div className="relative aspect-square bg-muted cursor-pointer">
                         {album.images[0]?.url ? (

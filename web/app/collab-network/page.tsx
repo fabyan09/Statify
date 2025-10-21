@@ -169,7 +169,7 @@ export default function CollabNetworkPage() {
   if (error) {
     return (
       <div className="flex items-center justify-center h-[50vh]">
-        <Card className="w-full max-w-md">
+        <Card className="w-full max-w-md !bg-background/10">
           <CardHeader>
             <CardTitle>Error Loading Data</CardTitle>
             <CardDescription>
@@ -209,7 +209,7 @@ export default function CollabNetworkPage() {
 
       {/* Stats */}
       <div className="grid gap-4 md:grid-cols-3">
-        <Card>
+        <Card className="!bg-background/10">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">
               Total Collaborations
@@ -220,7 +220,7 @@ export default function CollabNetworkPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="!bg-background/10">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">
               Collaborative Tracks
@@ -233,7 +233,7 @@ export default function CollabNetworkPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="!bg-background/10">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">
               Artists with Collabs
@@ -246,7 +246,7 @@ export default function CollabNetworkPage() {
       </div>
 
       {/* Graph Customization */}
-      <Card>
+      <Card className="!bg-background/10">
         <CardHeader>
           <CardTitle>Graph Settings</CardTitle>
           <CardDescription>Customize the visualization parameters</CardDescription>
@@ -311,7 +311,7 @@ export default function CollabNetworkPage() {
       {/* Graph and Details */}
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Graph */}
-        <Card className="lg:col-span-2">
+        <Card className="lg:col-span-2 !bg-background/10">
           <CardHeader>
             <CardTitle>Collaboration Graph</CardTitle>
             <CardDescription>
@@ -434,7 +434,7 @@ export default function CollabNetworkPage() {
         </Card>
 
         {/* Selected Artist Details */}
-        <Card>
+        <Card className="!bg-background/10">
           <CardHeader>
             <CardTitle>Artist Details</CardTitle>
             <CardDescription>
@@ -574,7 +574,7 @@ export default function CollabNetworkPage() {
       </div>
 
       {/* Top Collaborations */}
-      <Card>
+      <Card className="!bg-background/10">
         <CardHeader>
           <CardTitle>Top 10 Collaborations</CardTitle>
           <CardDescription>

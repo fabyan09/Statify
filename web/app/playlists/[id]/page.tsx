@@ -234,7 +234,7 @@ export default function PlaylistDetailPage() {
         </Button>
       </Link>
 
-      <Card>
+      <Card className="!bg-background/10">
         <CardHeader>
           <div className="flex items-start justify-between">
             <div className="flex-1">
@@ -328,7 +328,7 @@ export default function PlaylistDetailPage() {
           )}
 
           {showAddTracks && (
-            <Card>
+            <Card className="!bg-background/10">
               <CardHeader>
                 <CardTitle>Add Tracks</CardTitle>
                 <CardDescription>
@@ -415,7 +415,7 @@ export default function PlaylistDetailPage() {
             </Card>
           )}
 
-          <Card>
+          <Card className="!bg-background/10">
             <CardHeader>
               <CardTitle>Playlist Tracks</CardTitle>
               <CardDescription>

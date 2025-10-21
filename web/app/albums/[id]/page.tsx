@@ -155,7 +155,7 @@ export default function AlbumDetailPage() {
   if (!album) {
     return (
       <div className="flex items-center justify-center h-[50vh]">
-        <Card className="w-full max-w-md">
+        <Card className="w-full max-w-md !bg-background/10">
           <CardHeader>
             <CardTitle>Album Not Found</CardTitle>
             <CardDescription>
@@ -189,7 +189,7 @@ export default function AlbumDetailPage() {
       </Link>
 
       {/* Album Header */}
-      <Card>
+      <Card className="!bg-background/10">
         <CardContent className="p-6">
           <div className="flex flex-col md:flex-row gap-6">
             {/* Album Cover */}
@@ -279,7 +279,7 @@ export default function AlbumDetailPage() {
       </Card>
 
       {/* Track List */}
-      <Card>
+      <Card className="!bg-background/10">
         <CardHeader>
           <CardTitle>Tracks</CardTitle>
           <CardDescription>

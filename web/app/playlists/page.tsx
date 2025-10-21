@@ -113,7 +113,7 @@ export default function PlaylistsPage() {
       </div>
 
       {showCreateForm && (
-        <Card className="border-2 border-primary">
+        <Card className="border-2 border-primary !bg-background/10">
           <CardHeader>
             <CardTitle>Create New Playlist</CardTitle>
             <CardDescription>Add a new playlist to your collection</CardDescription>
@@ -160,7 +160,7 @@ export default function PlaylistsPage() {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <Card>
+        <Card className="!bg-background/10">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <ListMusic className="h-4 w-4" />
@@ -172,7 +172,7 @@ export default function PlaylistsPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="!bg-background/10">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Users className="h-4 w-4" />
@@ -184,7 +184,7 @@ export default function PlaylistsPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="!bg-background/10">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Music className="h-4 w-4" />
@@ -204,7 +204,7 @@ export default function PlaylistsPage() {
           <h2 className="text-2xl font-bold">My Playlists</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {myPlaylists.map((playlist) => (
-              <Card key={playlist._id} className="hover:shadow-lg transition-shadow">
+              <Card key={playlist._id} className="hover:shadow-lg transition-shadow !bg-background/10">
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -269,7 +269,7 @@ export default function PlaylistsPage() {
           <h2 className="text-2xl font-bold">Collaborative Playlists</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {collaborativePlaylists.map((playlist) => (
-              <Card key={playlist._id} className="hover:shadow-lg transition-shadow border-2 border-purple-500/20">
+              <Card key={playlist._id} className="hover:shadow-lg transition-shadow border-2 border-purple-500/20 !bg-background/10">
                 <CardHeader>
                   <CardTitle className="line-clamp-1">{playlist.name}</CardTitle>
                   <CardDescription className="line-clamp-2">
@@ -306,7 +306,7 @@ export default function PlaylistsPage() {
           <h2 className="text-2xl font-bold">Public Playlists</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {publicPlaylists.map((playlist) => (
-              <Card key={playlist._id} className="hover:shadow-lg transition-shadow">
+              <Card key={playlist._id} className="hover:shadow-lg transition-shadow !bg-background/10">
                 <CardHeader>
                   <CardTitle className="line-clamp-1">{playlist.name}</CardTitle>
                   <CardDescription className="line-clamp-2">

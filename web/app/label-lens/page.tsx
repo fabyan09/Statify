@@ -130,7 +130,7 @@ export default function LabelLensPage() {
   if (error) {
     return (
       <div className="flex items-center justify-center h-[50vh]">
-        <Card className="w-full max-w-md">
+        <Card className="w-full max-w-md !bg-background/10">
           <CardHeader>
             <CardTitle>Error Loading Data</CardTitle>
             <CardDescription>
@@ -169,7 +169,7 @@ export default function LabelLensPage() {
 
       {/* Overview Stats */}
       <div className="grid gap-4 md:grid-cols-3">
-        <Card>
+        <Card className="!bg-background/10">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Total Labels</CardTitle>
           </CardHeader>
@@ -178,7 +178,7 @@ export default function LabelLensPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="!bg-background/10">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Avg Albums per Label</CardTitle>
           </CardHeader>
@@ -189,7 +189,7 @@ export default function LabelLensPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="!bg-background/10">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Avg Tracks per Label</CardTitle>
           </CardHeader>
@@ -203,7 +203,7 @@ export default function LabelLensPage() {
 
       {/* Charts */}
       <div className="grid gap-6 md:grid-cols-2">
-        <Card>
+        <Card className="!bg-background/10">
           <CardHeader>
             <CardTitle>Top 10 Labels by Popularity</CardTitle>
             <CardDescription>Average popularity score across albums</CardDescription>
@@ -236,7 +236,7 @@ export default function LabelLensPage() {
           </CardContent>
         </Card>
 
-        <Card className="flex flex-col">
+        <Card className="flex flex-col !bg-background/10">
           <CardHeader className="items-center pb-0">
             <CardTitle>Album Type Distribution</CardTitle>
             <CardDescription>Singles vs Albums vs Compilations</CardDescription>
@@ -278,7 +278,7 @@ export default function LabelLensPage() {
       </div>
 
       {/* Top Labels Table */}
-      <Card>
+      <Card className="!bg-background/10">
         <CardHeader>
           <CardTitle>Label Rankings</CardTitle>
           <CardDescription>

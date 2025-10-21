@@ -16,7 +16,7 @@ export function DashboardContent() {
   if (error) {
     return (
       <div className="flex items-center justify-center h-[50vh]">
-        <Card className="w-full max-w-md border-destructive/50 !bg-background/10 backdrop-blur-xl">
+        <Card className="w-full max-w-md border-destructive/50 !bg-background/10">
           <CardHeader>
             <CardTitle className="text-destructive">Error Loading Data</CardTitle>
             <CardDescription>
@@ -57,7 +57,7 @@ export function DashboardContent() {
 
       {/* KPIs */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="group hover:shadow-lg transition-all duration-300 hover:scale-[1.02] border-l-4 border-l-blue-500 !bg-background/10 backdrop-blur-xl">
+        <Card className="group hover:shadow-lg transition-all duration-300 hover:scale-[1.02] border-l-4 border-l-blue-500 !bg-background/10">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Total Artists
@@ -72,7 +72,7 @@ export function DashboardContent() {
           </CardContent>
         </Card>
 
-        <Card className="group hover:shadow-lg transition-all duration-300 hover:scale-[1.02] border-l-4 border-l-purple-500 !bg-background/10 backdrop-blur-xl">
+        <Card className="group hover:shadow-lg transition-all duration-300 hover:scale-[1.02] border-l-4 border-l-purple-500 !bg-background/10">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Total Albums
@@ -87,7 +87,7 @@ export function DashboardContent() {
           </CardContent>
         </Card>
 
-        <Card className="group hover:shadow-lg transition-all duration-300 hover:scale-[1.02] border-l-4 border-l-green-500 !bg-background/10 backdrop-blur-xl">
+        <Card className="group hover:shadow-lg transition-all duration-300 hover:scale-[1.02] border-l-4 border-l-green-500 !bg-background/10">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Total Tracks
@@ -102,7 +102,7 @@ export function DashboardContent() {
           </CardContent>
         </Card>
 
-        <Card className="group hover:shadow-lg transition-all duration-300 hover:scale-[1.02] border-l-4 border-l-orange-500 !bg-background/10 backdrop-blur-xl">
+        <Card className="group hover:shadow-lg transition-all duration-300 hover:scale-[1.02] border-l-4 border-l-orange-500 !bg-background/10">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Avg Popularity
@@ -125,7 +125,7 @@ export function DashboardContent() {
 
       {/* Additional Stats */}
       <div className="grid gap-4 md:grid-cols-2">
-        <Card className="hover:shadow-md transition-shadow duration-300 !bg-background/10 backdrop-blur-xl">
+        <Card className="hover:shadow-md transition-shadow duration-300 !bg-background/10">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-primary" />
@@ -151,7 +151,7 @@ export function DashboardContent() {
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-md transition-shadow duration-300 !bg-background/10 backdrop-blur-xl">
+        <Card className="hover:shadow-md transition-shadow duration-300 !bg-background/10">
           <CardHeader>
             <div className="flex items-start justify-between">
               <div>
@@ -191,7 +191,7 @@ export function DashboardContent() {
       </div>
 
       {/* Top Artists */}
-      <Card className="overflow-hidden !bg-background/10 backdrop-blur-xl">
+      <Card className="overflow-hidden !bg-background/10">
         <CardHeader>
           <div className="flex items-start justify-between">
             <div>

@@ -195,7 +195,7 @@ export default function SearchPage() {
       </div>
 
       {/* Search Input */}
-      <Card>
+      <Card className="!bg-background/10">
         <CardContent className="pt-6">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -236,7 +236,7 @@ export default function SearchPage() {
 
         {/* Tracks Tab */}
         <TabsContent value="tracks">
-          <Card>
+          <Card className="!bg-background/10">
             <CardHeader>
               <CardTitle>Tracks</CardTitle>
               <CardDescription>
@@ -360,7 +360,7 @@ export default function SearchPage() {
 
         {/* Albums Tab */}
         <TabsContent value="albums">
-          <Card>
+          <Card className="!bg-background/10">
             <CardHeader>
               <CardTitle>Albums</CardTitle>
               <CardDescription>
@@ -374,7 +374,7 @@ export default function SearchPage() {
                   const artistNames = albumArtists.map((artist) => artist?.name).join(", ") || "Unknown Artist";
 
                   return (
-                    <Card key={album._id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                    <Card key={album._id} className="overflow-hidden hover:shadow-lg transition-shadow !bg-background/10">
                       <Link href={`/albums/${album._id}`}>
                         <div className="relative aspect-square bg-muted cursor-pointer">
                           {album.images[0]?.url ? (
@@ -444,7 +444,7 @@ export default function SearchPage() {
 
         {/* Artists Tab */}
         <TabsContent value="artists">
-          <Card>
+          <Card className="!bg-background/10">
             <CardHeader>
               <CardTitle>Artists</CardTitle>
               <CardDescription>
@@ -454,7 +454,7 @@ export default function SearchPage() {
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                 {filteredArtists.slice(0, 50).map((artist) => (
-                  <Card key={artist._id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                  <Card key={artist._id} className="overflow-hidden hover:shadow-lg transition-shadow !bg-background/10">
                     <Link href={`/artists/${artist._id}`}>
                       <div className="relative aspect-square bg-muted cursor-pointer">
                         {artist.images[0]?.url ? (
@@ -527,7 +527,7 @@ export default function SearchPage() {
 
         {/* Playlists Tab */}
         <TabsContent value="playlists">
-          <Card>
+          <Card className="!bg-background/10">
             <CardHeader>
               <CardTitle>Public Playlists</CardTitle>
               <CardDescription>
@@ -540,7 +540,7 @@ export default function SearchPage() {
                   const isCollaborator = currentUser ? playlist.collaborators.includes(currentUser._id) : false;
 
                   return (
-                    <Card key={playlist._id} className="hover:shadow-lg transition-shadow">
+                    <Card key={playlist._id} className="hover:shadow-lg transition-shadow !bg-background/10">
                       <CardContent className="p-6">
                         <div className="flex items-start gap-4">
                           <div className="h-16 w-16 rounded bg-muted flex items-center justify-center flex-shrink-0">
@@ -598,7 +598,7 @@ export default function SearchPage() {
 
         {/* Users Tab */}
         <TabsContent value="users">
-          <Card>
+          <Card className="!bg-background/10">
             <CardHeader>
               <CardTitle>Users</CardTitle>
               <CardDescription>
@@ -608,7 +608,7 @@ export default function SearchPage() {
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {filteredUsers.map((u) => (
-                  <Card key={u._id} className="hover:shadow-lg transition-shadow">
+                  <Card key={u._id} className="hover:shadow-lg transition-shadow !bg-background/10">
                     <Link href={`/users/${u._id}`}>
                       <CardContent className="p-6 cursor-pointer">
                         <div className="flex items-center gap-4">

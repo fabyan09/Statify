@@ -119,7 +119,7 @@ export default function UserProfilePage() {
   if (!profileUser) {
     return (
       <div className="flex items-center justify-center h-[50vh]">
-        <Card className="w-full max-w-md">
+        <Card className="w-full max-w-md !bg-background/10">
           <CardHeader>
             <CardTitle>User Not Found</CardTitle>
             <CardDescription>
@@ -150,7 +150,7 @@ export default function UserProfilePage() {
       </Link>
 
       {/* User Header */}
-      <Card>
+      <Card className="!bg-background/10">
         <CardContent className="p-6">
           <div className="flex flex-col md:flex-row gap-6 items-center md:items-start">
             {/* User Avatar */}
@@ -195,7 +195,7 @@ export default function UserProfilePage() {
 
         {/* Playlists Tab */}
         <TabsContent value="playlists">
-          <Card>
+          <Card className="!bg-background/10">
             <CardHeader>
               <CardTitle>Playlists</CardTitle>
               <CardDescription>
@@ -206,7 +206,7 @@ export default function UserProfilePage() {
               {userPlaylists && userPlaylists.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {userPlaylists.map((playlist) => (
-                    <Card key={playlist._id} className="hover:shadow-lg transition-shadow">
+                    <Card key={playlist._id} className="hover:shadow-lg transition-shadow !bg-background/10">
                       <Link href={`/playlists/${playlist._id}`}>
                         <CardContent className="p-6 cursor-pointer">
                           <div className="flex items-start gap-4">
@@ -248,7 +248,7 @@ export default function UserProfilePage() {
 
         {/* Liked Tracks Tab */}
         <TabsContent value="tracks">
-          <Card>
+          <Card className="!bg-background/10">
             <CardHeader>
               <CardTitle>Liked Tracks</CardTitle>
               <CardDescription>

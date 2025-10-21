@@ -111,7 +111,7 @@ export default function ReleaseCohortsPage() {
   if (error) {
     return (
       <div className="flex items-center justify-center h-[50vh]">
-        <Card className="w-full max-w-md">
+        <Card className="w-full max-w-md !bg-background/10">
           <CardHeader>
             <CardTitle>Error Loading Data</CardTitle>
             <CardDescription>
@@ -150,7 +150,7 @@ export default function ReleaseCohortsPage() {
 
       {/* Overview Stats */}
       <div className="grid gap-4 md:grid-cols-4">
-        <Card>
+        <Card className="!bg-background/10">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Total Releases</CardTitle>
           </CardHeader>
@@ -159,7 +159,7 @@ export default function ReleaseCohortsPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="!bg-background/10">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Years Span</CardTitle>
           </CardHeader>
@@ -170,7 +170,7 @@ export default function ReleaseCohortsPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="!bg-background/10">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Avg Releases/Year</CardTitle>
           </CardHeader>
@@ -181,7 +181,7 @@ export default function ReleaseCohortsPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="!bg-background/10">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Peak Year</CardTitle>
           </CardHeader>
@@ -213,7 +213,7 @@ export default function ReleaseCohortsPage() {
       </Tabs>
 
       {/* Top Performing Years */}
-      <Card>
+      <Card className="!bg-background/10">
         <CardHeader>
           <CardTitle>Top Performing Cohorts</CardTitle>
           <CardDescription>Years with highest average popularity</CardDescription>

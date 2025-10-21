@@ -85,7 +85,7 @@ export default function LibraryPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
+        <Card className="!bg-background/10">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Music className="h-4 w-4" />
@@ -97,7 +97,7 @@ export default function LibraryPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="!bg-background/10">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Disc className="h-4 w-4" />
@@ -109,7 +109,7 @@ export default function LibraryPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="!bg-background/10">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <User className="h-4 w-4" />
@@ -130,7 +130,7 @@ export default function LibraryPage() {
         </TabsList>
 
         <TabsContent value="tracks" className="space-y-4">
-          <Card>
+          <Card className="!bg-background/10">
             <CardHeader>
               <CardTitle>Liked Tracks</CardTitle>
               <CardDescription>
@@ -176,7 +176,7 @@ export default function LibraryPage() {
         </TabsContent>
 
         <TabsContent value="albums" className="space-y-4">
-          <Card>
+          <Card className="!bg-background/10">
             <CardHeader>
               <CardTitle>Liked Albums</CardTitle>
               <CardDescription>
@@ -220,7 +220,7 @@ export default function LibraryPage() {
         </TabsContent>
 
         <TabsContent value="artists" className="space-y-4">
-          <Card>
+          <Card className="!bg-background/10">
             <CardHeader>
               <CardTitle>Favorite Artists</CardTitle>
               <CardDescription>
