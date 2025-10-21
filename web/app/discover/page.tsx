@@ -3,14 +3,14 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
-import { useArtists, useAlbums, useTracks, useUser, useAddToLibrary, useRemoveFromLibrary, useUserPlaylists } from "@/lib/hooks";
+import { useArtists, useAlbums, useTracks, useUser, useAddToLibrary, useRemoveFromLibrary } from "@/lib/hooks";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Heart, Music, Sparkles, TrendingUp, Clock, Tag } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import type { User, Playlist } from "@/lib/api";
+import type { User } from "@/lib/api";
 
 interface Artist {
   _id: string;
@@ -62,7 +62,6 @@ export default function DiscoverPage() {
   const { data: artists = [], isLoading: artistsLoading } = useArtists();
   const { data: albums = [], isLoading: albumsLoading } = useAlbums();
   const { data: tracksData, isLoading: tracksLoading } = useTracks();
-  const { data: userPlaylists = [] } = useUserPlaylists(currentUser?._id || "");
 
   const addToLibrary = useAddToLibrary();
   const removeFromLibrary = useRemoveFromLibrary();
@@ -77,21 +76,20 @@ export default function DiscoverPage() {
   }, [currentUser, authLoading, router]);
 
   useEffect(() => {
-    if (!user || !artists.length || !albums.length || !tracksData?.items?.length) {
+    if (!user || !artists.length || !albums.length || !tracksData?.data?.length) {
       return;
     }
 
-    const tracks = tracksData.items;
-    const recs = generateRecommendations(user, artists, albums, tracks, userPlaylists);
+    const tracks = tracksData.data;
+    const recs = generateRecommendations(user, artists, albums, tracks);
     setRecommendations(recs);
-  }, [user, artists, albums, tracksData, userPlaylists]);
+  }, [user, artists, albums, tracksData]);
 
   const generateRecommendations = (
     user: User,
     allArtists: Artist[],
     allAlbums: Album[],
-    allTracks: Track[],
-    _playlists: Playlist[]
+    allTracks: Track[]
   ): RecommendationSection[] => {
     const sections: RecommendationSection[] = [];
 
