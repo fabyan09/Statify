@@ -293,7 +293,7 @@ export default function LabelLensPage() {
                 className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
               >
                 <div className="flex items-center gap-4 flex-1">
-                  <div className="text-2xl font-bold text-muted-foreground w-8">
+                  <div className="text-2xl font-bold text-muted-foreground w-16 text-center">
                     #{index + 1}
                   </div>
                   <div className="flex-1">
