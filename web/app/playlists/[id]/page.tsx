@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { playlistApi, fetchTracks } from "@/lib/api";
 import { useAuth } from "@/contexts/auth-context";
+import { useAlbums, useArtists, useUser, useAddToLibrary, useRemoveFromLibrary } from "@/lib/hooks";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,8 +22,11 @@ import {
   Edit,
   UserPlus,
   UserMinus,
+  Heart,
+  ExternalLink,
 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { Label } from "@/components/ui/label";
 
 export default function PlaylistDetailPage() {
@@ -47,6 +51,7 @@ export default function PlaylistDetailPage() {
   const [selectedTracks, setSelectedTracks] = useState<string[]>([]);
   const [showAddCollaborator, setShowAddCollaborator] = useState(false);
   const [collaboratorId, setCollaboratorId] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
 
   // Fetch playlist
   const { data: playlist, isLoading } = useQuery({
@@ -61,6 +66,20 @@ export default function PlaylistDetailPage() {
     queryFn: fetchTracks,
     enabled: !!currentUser,
   });
+
+  // Fetch albums and artists
+  const { data: albums } = useAlbums();
+  const { data: artists } = useArtists();
+
+  // Get user data for like functionality
+  const { data: user } = useUser(currentUser?._id || "");
+
+  const addToLibrary = useAddToLibrary();
+  const removeFromLibrary = useRemoveFromLibrary();
+
+  // Create lookups
+  const albumMap = albums ? new Map(albums.map((album) => [album._id, album])) : new Map();
+  const artistMap = artists ? new Map(artists.map((artist) => [artist._id, artist])) : new Map();
 
   // Update playlist mutation
   const updateMutation = useMutation({
@@ -131,10 +150,45 @@ export default function PlaylistDetailPage() {
   }
 
   const playlistTracks = allTracks.filter((track) => playlist.tracks.includes(track._id));
-  const availableTracks = allTracks.filter((track) => !playlist.tracks.includes(track._id));
+
+  // Filter available tracks by search term
+  const availableTracks = allTracks
+    .filter((track) => !playlist.tracks.includes(track._id))
+    .filter((track) => {
+      if (!searchTerm) return true;
+      const album = albumMap.get(track.album_id);
+      const trackArtists = track.artist_ids.map((id) => artistMap.get(id)).filter(Boolean);
+      const artistNames = trackArtists.map((artist) => artist?.name).join(", ");
+
+      return (
+        track.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        album?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        artistNames.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    });
+
   const isOwner = playlist.owner_id === currentUser._id;
   const isCollaborator = playlist.collaborators.includes(currentUser._id);
   const canEdit = isOwner || isCollaborator;
+
+  function formatDuration(ms: number): string {
+    const minutes = Math.floor(ms / 60000);
+    const seconds = Math.floor((ms % 60000) / 1000);
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+  }
+
+  function isTrackLiked(trackId: string): boolean {
+    return user?.liked_tracks?.includes(trackId) || false;
+  }
+
+  function handleLikeToggle(trackId: string) {
+    if (!currentUser) return;
+    if (isTrackLiked(trackId)) {
+      removeFromLibrary.mutate({ userId: currentUser._id, data: { track_id: trackId } });
+    } else {
+      addToLibrary.mutate({ userId: currentUser._id, data: { track_id: trackId } });
+    }
+  }
 
   const handleUpdate = () => {
     updateMutation.mutate({
@@ -276,36 +330,72 @@ export default function PlaylistDetailPage() {
               <CardHeader>
                 <CardTitle>Add Tracks</CardTitle>
                 <CardDescription>
-                  Select tracks to add to this playlist
+                  Select tracks to add to this playlist ({availableTracks.length} available)
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="max-h-96 overflow-y-auto space-y-2">
-                  {availableTracks.map((track) => (
-                    <div
-                      key={track._id}
-                      className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
-                        selectedTracks.includes(track._id)
-                          ? "bg-primary/20 border-2 border-primary"
-                          : "hover:bg-accent"
-                      }`}
-                      onClick={() => toggleTrackSelection(track._id)}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedTracks.includes(track._id)}
-                        onChange={() => {}}
-                        className="h-4 w-4"
-                      />
-                      <div className="flex-1">
-                        <div className="font-medium">{track.name}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {Math.floor(track.duration_ms / 60000)}:
-                          {String(Math.floor((track.duration_ms % 60000) / 1000)).padStart(2, "0")}
-                        </div>
-                      </div>
+                <Input
+                  placeholder="Search tracks, albums, or artists..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                <div className="h-[400px] overflow-y-auto space-y-2 pr-2">
+                  {availableTracks.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      {searchTerm ? "No tracks found matching your search" : "No tracks available to add"}
                     </div>
-                  ))}
+                  ) : (
+                    availableTracks.map((track) => {
+                      const album = albumMap.get(track.album_id);
+                      const trackArtists = track.artist_ids.map((id) => artistMap.get(id)).filter(Boolean);
+                      const artistNames = trackArtists.map((artist) => artist?.name).join(", ") || "Unknown Artist";
+
+                      return (
+                        <div
+                          key={track._id}
+                          className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
+                            selectedTracks.includes(track._id)
+                              ? "bg-primary/20 border-2 border-primary"
+                              : "hover:bg-accent border-2 border-transparent"
+                          }`}
+                          onClick={() => toggleTrackSelection(track._id)}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedTracks.includes(track._id)}
+                            onChange={() => {}}
+                            className="h-4 w-4"
+                          />
+                          <div className="relative h-12 w-12 rounded overflow-hidden bg-muted flex-shrink-0">
+                            {album?.images[0]?.url ? (
+                              <Image
+                                src={album.images[0].url}
+                                alt={album.name}
+                                fill
+                                className="object-cover"
+                              />
+                            ) : (
+                              <div className="h-full w-full bg-muted flex items-center justify-center">
+                                <Music className="h-6 w-6 text-muted-foreground" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium truncate" title={track.name}>{track.name}</div>
+                            <div className="text-sm text-muted-foreground truncate" title={artistNames}>
+                              {artistNames}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <Badge variant="outline">{track.popularity}/100</Badge>
+                            <div className="text-sm text-muted-foreground w-12 text-right">
+                              {formatDuration(track.duration_ms)}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
                 <div className="flex gap-2">
                   <Button onClick={handleAddTracks} disabled={selectedTracks.length === 0}>
@@ -314,6 +404,7 @@ export default function PlaylistDetailPage() {
                   <Button variant="outline" onClick={() => {
                     setShowAddTracks(false);
                     setSelectedTracks([]);
+                    setSearchTerm("");
                   }}>
                     Cancel
                   </Button>
@@ -336,31 +427,71 @@ export default function PlaylistDetailPage() {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {playlistTracks.map((track, index) => (
-                    <div
-                      key={track._id}
-                      className="flex items-center gap-3 p-3 rounded-lg hover:bg-accent transition-colors"
-                    >
-                      <div className="text-sm text-muted-foreground w-8">{index + 1}</div>
-                      <div className="flex-1">
-                        <div className="font-medium">{track.name}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {Math.floor(track.duration_ms / 60000)}:
-                          {String(Math.floor((track.duration_ms % 60000) / 1000)).padStart(2, "0")}
+                  {playlistTracks.map((track, index) => {
+                    const album = albumMap.get(track.album_id);
+                    const trackArtists = track.artist_ids.map((id) => artistMap.get(id)).filter(Boolean);
+                    const artistNames = trackArtists.map((artist) => artist?.name).join(", ") || "Unknown Artist";
+
+                    return (
+                      <div
+                        key={track._id}
+                        className="flex items-center gap-3 p-3 rounded-lg hover:bg-accent transition-colors"
+                      >
+                        <div className="text-sm text-muted-foreground w-8">{index + 1}</div>
+                        <div className="relative h-12 w-12 rounded overflow-hidden bg-muted flex-shrink-0">
+                          {album?.images[0]?.url ? (
+                            <Image
+                              src={album.images[0].url}
+                              alt={album.name}
+                              fill
+                              className="object-cover"
+                            />
+                          ) : (
+                            <div className="h-full w-full bg-muted flex items-center justify-center">
+                              <Music className="h-6 w-6 text-muted-foreground" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium truncate" title={track.name}>{track.name}</div>
+                          <div className="text-sm text-muted-foreground truncate" title={artistNames}>
+                            {artistNames}
+                          </div>
+                        </div>
+                        <Badge variant="outline">{track.popularity}/100</Badge>
+                        <div className="text-sm text-muted-foreground w-12 text-right">
+                          {formatDuration(track.duration_ms)}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            onClick={() => handleLikeToggle(track._id)}
+                            className={isTrackLiked(track._id) ? "text-red-500 hover:text-red-600" : ""}
+                          >
+                            <Heart className={isTrackLiked(track._id) ? "h-4 w-4 fill-current" : "h-4 w-4"} />
+                          </Button>
+                          <a
+                            href={track.external_urls.spotify}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-2 hover:bg-accent rounded-md"
+                          >
+                            <ExternalLink className="h-4 w-4 text-muted-foreground hover:text-primary" />
+                          </a>
+                          {canEdit && (
+                            <Button
+                              size="icon-sm"
+                              variant="ghost"
+                              onClick={() => removeTracksMutation.mutate([track._id])}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
                       </div>
-                      <Badge variant="secondary">{track.popularity}%</Badge>
-                      {canEdit && (
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => removeTracksMutation.mutate([track._id])}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </CardContent>
