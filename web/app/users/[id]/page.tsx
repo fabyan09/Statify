@@ -32,12 +32,16 @@ export default function UserProfilePage() {
 
   const { data: profileUser, isLoading: userLoading } = useUser(userId);
   const { data: userLibrary, isLoading: libraryLoading } = useUserLibrary(userId);
-  const { data: userPlaylists, isLoading: playlistsLoading } = useUserPlaylists(userId);
+  const { data: userPlaylistsResult, isLoading: playlistsLoading } = useUserPlaylists(userId, { limit: 1000 });
 
-  const { data: tracks, isLoading: tracksLoading } = useTracks();
+  const { data: tracksResult, isLoading: tracksLoading } = useTracks({ limit: 1000 });
   const { data: albums, isLoading: albumsLoading } = useAlbums();
   const { data: artists, isLoading: artistsLoading } = useArtists();
-  const { data: allPlaylists } = usePlaylists();
+  const { data: allPlaylistsResult } = usePlaylists({ limit: 1000 });
+
+  const tracks = tracksResult?.data || [];
+  const userPlaylists = userPlaylistsResult?.data || [];
+  const allPlaylists = allPlaylistsResult?.data || [];
 
   // Get authenticated user
   const { user: authUser } = useAuth();

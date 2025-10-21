@@ -29,8 +29,11 @@ export default function AlbumDetailPage() {
 
   const { data: album, isLoading: albumLoading } = useAlbum(albumId);
   const { data: artists, isLoading: artistsLoading } = useArtists();
-  const { data: tracks, isLoading: tracksLoading } = useTracks();
-  const { data: playlists } = usePlaylists();
+  const { data: tracksResult, isLoading: tracksLoading } = useTracks({ limit: 1000 });
+  const { data: playlistsResult } = usePlaylists({ limit: 1000 });
+
+  const tracks = tracksResult?.data || [];
+  const playlists = playlistsResult?.data || [];
 
   // Get authenticated user
   const { user: currentUser } = useAuth();

@@ -117,10 +117,10 @@ export function useAddTracksToPlaylist() {
   });
 }
 
-export function useUsers() {
+export function useUsers(params?: PaginationParams) {
   return useQuery({
-    queryKey: ["users"],
-    queryFn: userApi.getAll,
+    queryKey: ["users", params?.page, params?.limit],
+    queryFn: () => userApi.getAll(params),
   });
 }
 
@@ -151,10 +151,10 @@ export function useUserLibrary(userId: string) {
   });
 }
 
-export function useUserPlaylists(userId: string) {
+export function useUserPlaylists(userId: string, params?: PaginationParams) {
   return useQuery({
-    queryKey: ["user-playlists", userId],
-    queryFn: () => playlistApi.getByUser(userId),
+    queryKey: ["user-playlists", userId, params?.page, params?.limit],
+    queryFn: () => playlistApi.getByUser(userId, params),
     enabled: !!userId,
   });
 }

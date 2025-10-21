@@ -30,8 +30,8 @@ export default function AuthPage() {
   const loginMutation = useMutation({
     mutationFn: async (credentials: { username: string; password: string }) => {
       // Get all users and find matching username
-      const users = await userApi.getAll();
-      const user = users.find(u => u.username === credentials.username);
+      const usersResult = await userApi.getAll({ limit: 1000 });
+      const user = usersResult.data.find(u => u.username === credentials.username);
 
       if (!user) {
         throw new Error("User not found");

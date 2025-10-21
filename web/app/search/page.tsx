@@ -26,14 +26,25 @@ import { useAuth } from "@/contexts/auth-context";
 import { ExternalLink, Search, Heart, Plus, Users, Music, Disc, User, ListMusic } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { Pagination } from "@/components/pagination";
 
 export default function SearchPage() {
-  const { data: tracks, isLoading: tracksLoading } = useTracks();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [activeTab, setActiveTab] = useState("tracks");
+  const [tracksPage, setTracksPage] = useState(1);
+  const [tracksLimit] = useState(50);
+
+  const { data: tracksResult, isLoading: tracksLoading } = useTracks({ page: tracksPage, limit: tracksLimit });
   const { data: albums, isLoading: albumsLoading } = useAlbums();
   const { data: artists, isLoading: artistsLoading } = useArtists();
-  const { data: publicPlaylists, isLoading: playlistsLoading } = usePublicPlaylists();
-  const { data: users, isLoading: usersLoading } = useUsers();
-  const { data: userPlaylists } = usePlaylists();
+  const { data: publicPlaylistsResult, isLoading: playlistsLoading } = usePublicPlaylists({ limit: 1000 });
+  const { data: usersResult, isLoading: usersLoading } = useUsers({ limit: 1000 });
+  const { data: userPlaylistsResult } = usePlaylists({ limit: 1000 });
+
+  const tracks = tracksResult?.data || [];
+  const publicPlaylists = publicPlaylistsResult?.data || [];
+  const users = usersResult?.data || [];
+  const userPlaylists = userPlaylistsResult?.data || [];
 
   // Get authenticated user
   const { user: currentUser } = useAuth();
@@ -43,9 +54,6 @@ export default function SearchPage() {
   const removeFromLibrary = useRemoveFromLibrary();
   const addTracksToPlaylist = useAddTracksToPlaylist();
   const addCollaborator = useAddCollaborator();
-
-  const [searchTerm, setSearchTerm] = useState("");
-  const [activeTab, setActiveTab] = useState("tracks");
 
   // Dialog states
   const [playlistDialogOpen, setPlaylistDialogOpen] = useState(false);
@@ -250,7 +258,7 @@ export default function SearchPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredTracks.slice(0, 50).map((track) => {
+                  {filteredTracks.map((track) => {
                     const album = albumMap.get(track.album_id);
                     const trackArtists = track.artist_ids.map((id) => artistMap.get(id)).filter(Boolean);
                     const artistNames = trackArtists.map((artist) => artist?.name).join(", ") || "Unknown Artist";
@@ -333,11 +341,6 @@ export default function SearchPage() {
                   })}
                 </TableBody>
               </Table>
-              {filteredTracks.length > 50 && (
-                <p className="text-sm text-muted-foreground text-center mt-4">
-                  Showing first 50 results. Refine your search to see more.
-                </p>
-              )}
               {filteredTracks.length === 0 && (
                 <p className="text-center text-muted-foreground py-8">
                   No tracks found matching your search.
@@ -345,6 +348,14 @@ export default function SearchPage() {
               )}
             </CardContent>
           </Card>
+          {tracksResult?.meta && filteredTracks.length > 0 && (
+            <div className="mt-4">
+              <Pagination
+                meta={tracksResult.meta}
+                onPageChange={(newPage) => setTracksPage(newPage)}
+              />
+            </div>
+          )}
         </TabsContent>
 
         {/* Albums Tab */}

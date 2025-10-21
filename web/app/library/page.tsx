@@ -32,9 +32,9 @@ export default function LibraryPage() {
   });
 
   // Fetch all tracks, albums, artists
-  const { data: allTracks = [] } = useQuery({
+  const { data: tracksResult } = useQuery({
     queryKey: ["tracks"],
-    queryFn: fetchTracks,
+    queryFn: () => fetchTracks({ limit: 1000 }),
   });
 
   const { data: allAlbums = [] } = useQuery({
@@ -46,6 +46,8 @@ export default function LibraryPage() {
     queryKey: ["artists"],
     queryFn: fetchArtists,
   });
+
+  const allTracks = tracksResult?.data || [];
 
   // Remove from library mutation
   const removeMutation = useMutation({

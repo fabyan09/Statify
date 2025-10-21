@@ -61,11 +61,13 @@ export default function PlaylistDetailPage() {
   });
 
   // Fetch all tracks
-  const { data: allTracks = [] } = useQuery({
+  const { data: tracksResult } = useQuery({
     queryKey: ["tracks"],
-    queryFn: fetchTracks,
+    queryFn: () => fetchTracks({ limit: 1000 }),
     enabled: !!currentUser,
   });
+
+  const allTracks = tracksResult?.data || [];
 
   // Fetch albums and artists
   const { data: albums } = useAlbums();

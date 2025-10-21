@@ -1,6 +1,8 @@
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 import { PaginationMeta } from "@/lib/api";
+import { useState } from "react";
 
 interface PaginationProps {
   meta: PaginationMeta;
@@ -9,38 +11,59 @@ interface PaginationProps {
 
 export function Pagination({ meta, onPageChange }: PaginationProps) {
   const { page, totalPages, hasNextPage, hasPrevPage } = meta;
+  const [inputPage, setInputPage] = useState("");
+
+  const handleGoToPage = () => {
+    const pageNum = parseInt(inputPage);
+    if (!isNaN(pageNum) && pageNum >= 1 && pageNum <= totalPages) {
+      onPageChange(pageNum);
+      setInputPage("");
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      handleGoToPage();
+    }
+  };
 
   // Generate page numbers to display
   const getPageNumbers = () => {
     const pages: (number | string)[] = [];
-    const maxPagesToShow = 5;
 
-    if (totalPages <= maxPagesToShow) {
-      // Show all pages if total is small
+    // If 7 pages or less, show all
+    if (totalPages <= 7) {
       for (let i = 1; i <= totalPages; i++) {
         pages.push(i);
       }
-    } else {
-      // Always show first page
-      pages.push(1);
+      return pages;
+    }
 
-      if (page > 3) {
-        pages.push('...');
-      }
+    // Always show first page
+    pages.push(1);
 
-      // Show current page and neighbors
-      const start = Math.max(2, page - 1);
-      const end = Math.min(totalPages - 1, page + 1);
-
-      for (let i = start; i <= end; i++) {
+    // If current page is near the start (1, 2, 3, 4)
+    if (page <= 4) {
+      for (let i = 2; i <= 5; i++) {
         pages.push(i);
       }
-
-      if (page < totalPages - 2) {
-        pages.push('...');
+      pages.push('...');
+      pages.push(totalPages);
+    }
+    // If current page is near the end
+    else if (page >= totalPages - 3) {
+      pages.push('...');
+      for (let i = totalPages - 4; i <= totalPages; i++) {
+        pages.push(i);
       }
-
-      // Always show last page
+    }
+    // Current page is in the middle
+    else {
+      pages.push('...');
+      pages.push(page - 1);
+      pages.push(page);
+      pages.push(page + 1);
+      pages.push('...');
       pages.push(totalPages);
     }
 
@@ -57,7 +80,8 @@ export function Pagination({ meta, onPageChange }: PaginationProps) {
         Page {page} of {totalPages} ({meta.total} items)
       </div>
 
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
         <Button
           variant="outline"
           size="icon"
@@ -113,6 +137,29 @@ export function Pagination({ meta, onPageChange }: PaginationProps) {
         >
           <ChevronsRight className="h-4 w-4" />
         </Button>
+        </div>
+
+        <div className="flex items-center gap-1">
+          <span className="text-sm text-muted-foreground whitespace-nowrap">Go to:</span>
+          <Input
+            type="number"
+            min={1}
+            max={totalPages}
+            value={inputPage}
+            onChange={(e) => setInputPage(e.target.value)}
+            onKeyPress={handleKeyPress}
+            placeholder={`1-${totalPages}`}
+            className="w-20 h-8"
+          />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleGoToPage}
+            disabled={!inputPage}
+          >
+            Go
+          </Button>
+        </div>
       </div>
     </div>
   );

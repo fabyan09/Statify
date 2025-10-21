@@ -24,8 +24,8 @@ export class PlaylistsService {
   }
 
   async findAll(paginationDto?: PaginationDto): Promise<PaginatedResult<Playlist>> {
-    const page = paginationDto?.page || 1;
-    const limit = paginationDto?.limit || 20;
+    const page = Number(paginationDto?.page) || 1;
+    const limit = Number(paginationDto?.limit) || 20;
     const skip = (page - 1) * limit;
 
     const [data, total] = await Promise.all([
@@ -57,8 +57,8 @@ export class PlaylistsService {
   }
 
   async findByUser(userId: string, paginationDto?: PaginationDto): Promise<PaginatedResult<Playlist>> {
-    const page = paginationDto?.page || 1;
-    const limit = paginationDto?.limit || 20;
+    const page = Number(paginationDto?.page) || 1;
+    const limit = Number(paginationDto?.limit) || 20;
     const skip = (page - 1) * limit;
 
     const filter = {
@@ -86,8 +86,8 @@ export class PlaylistsService {
   }
 
   async findPublicPlaylists(paginationDto?: PaginationDto): Promise<PaginatedResult<Playlist>> {
-    const page = paginationDto?.page || 1;
-    const limit = paginationDto?.limit || 20;
+    const page = Number(paginationDto?.page) || 1;
+    const limit = Number(paginationDto?.limit) || 20;
     const skip = (page - 1) * limit;
 
     const filter = { isPublic: true };

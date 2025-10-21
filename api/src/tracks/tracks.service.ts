@@ -24,8 +24,8 @@ export class TracksService {
   }
 
   async findAll(paginationDto?: PaginationDto): Promise<PaginatedResult<Track>> {
-    const page = paginationDto?.page || 1;
-    const limit = paginationDto?.limit || 20;
+    const page = Number(paginationDto?.page) || 1;
+    const limit = Number(paginationDto?.limit) || 20;
     const skip = (page - 1) * limit;
 
     const cacheKey = `tracks-page-${page}-limit-${limit}`;

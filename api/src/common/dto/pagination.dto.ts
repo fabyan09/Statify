@@ -1,6 +1,6 @@
 export class PaginationDto {
-  page?: number;
-  limit?: number;
+  page?: number | string;
+  limit?: number | string;
 }
 
 export interface PaginatedResult<T> {

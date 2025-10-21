@@ -112,8 +112,9 @@ export interface User {
 }
 
 export const userApi = {
-  getAll: async (): Promise<User[]> => {
-    const res = await fetch(`${API_BASE_URL}/users`);
+  getAll: async (params?: PaginationParams): Promise<PaginatedResult<User>> => {
+    const query = buildPaginationQuery(params);
+    const res = await fetch(`${API_BASE_URL}/users${query}`);
     if (!res.ok) throw new Error('Failed to fetch users');
     return res.json();
   },

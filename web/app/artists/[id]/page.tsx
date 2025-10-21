@@ -30,8 +30,11 @@ export default function ArtistDetailPage() {
 
   const { data: artist, isLoading: artistLoading } = useArtist(artistId);
   const { data: albums, isLoading: albumsLoading } = useAlbums();
-  const { data: tracks, isLoading: tracksLoading } = useTracks();
-  const { data: playlists } = usePlaylists();
+  const { data: tracksResult, isLoading: tracksLoading } = useTracks({ limit: 1000 });
+  const { data: playlistsResult } = usePlaylists({ limit: 1000 });
+
+  const tracks = tracksResult?.data || [];
+  const playlists = playlistsResult?.data || [];
 
   // Get authenticated user
   const { user: currentUser } = useAuth();
