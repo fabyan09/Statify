@@ -38,10 +38,11 @@ interface GraphLink {
 
 export default function CollabNetworkPage() {
   const { data: artists, isLoading: artistsLoading, error: artistsError } = useArtists();
-  const { data: tracks, isLoading: tracksLoading, error: tracksError } = useTracks();
+  const { data: tracksResult, isLoading: tracksLoading, error: tracksError } = useTracks({ limit: 1000 });
 
   const isLoading = artistsLoading || tracksLoading;
   const error = artistsError || tracksError;
+  const tracks = tracksResult?.data || [];
 
   const [selectedArtist, setSelectedArtist] = useState<Artist | null>(null);
   const [highlightedNode, setHighlightedNode] = useState<string | null>(null);

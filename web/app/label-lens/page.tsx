@@ -38,10 +38,11 @@ const COLORS = [
 
 export default function LabelLensPage() {
   const { data: albums, isLoading: albumsLoading, error: albumsError } = useAlbums();
-  const { data: tracks, isLoading: tracksLoading, error: tracksError } = useTracks();
+  const { data: tracksResult, isLoading: tracksLoading, error: tracksError } = useTracks({ limit: 1000 });
 
   const isLoading = albumsLoading || tracksLoading;
   const error = albumsError || tracksError;
+  const tracks = tracksResult?.data || [];
 
   // Calculate label stats
   const labelStats: LabelStats[] = albums ? Object.entries(

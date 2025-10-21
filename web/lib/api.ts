@@ -5,6 +5,34 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 // Cache for 5 minutes (300 seconds)
 const CACHE_REVALIDATE = 300;
 
+// Pagination types
+export interface PaginationParams {
+  page?: number;
+  limit?: number;
+}
+
+export interface PaginationMeta {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+}
+
+export interface PaginatedResult<T> {
+  data: T[];
+  meta: PaginationMeta;
+}
+
+function buildPaginationQuery(params?: PaginationParams): string {
+  if (!params) return '';
+  const query = new URLSearchParams();
+  if (params.page) query.set('page', params.page.toString());
+  if (params.limit) query.set('limit', params.limit.toString());
+  return query.toString() ? `?${query.toString()}` : '';
+}
+
 export async function fetchArtists(): Promise<Artist[]> {
   const response = await fetch(`${API_BASE_URL}/artists`, {
     next: { revalidate: CACHE_REVALIDATE },
@@ -21,8 +49,9 @@ export async function fetchAlbums(): Promise<Album[]> {
   return response.json();
 }
 
-export async function fetchTracks(): Promise<Track[]> {
-  const response = await fetch(`${API_BASE_URL}/tracks`, {
+export async function fetchTracks(params?: PaginationParams): Promise<PaginatedResult<Track>> {
+  const query = buildPaginationQuery(params);
+  const response = await fetch(`${API_BASE_URL}/tracks${query}`, {
     next: { revalidate: CACHE_REVALIDATE },
   });
   if (!response.ok) throw new Error("Failed to fetch tracks");
@@ -146,8 +175,9 @@ export interface Playlist {
 }
 
 export const playlistApi = {
-  getAll: async (): Promise<Playlist[]> => {
-    const res = await fetch(`${API_BASE_URL}/playlists`);
+  getAll: async (params?: PaginationParams): Promise<PaginatedResult<Playlist>> => {
+    const query = buildPaginationQuery(params);
+    const res = await fetch(`${API_BASE_URL}/playlists${query}`);
     if (!res.ok) throw new Error('Failed to fetch playlists');
     return res.json();
   },
@@ -158,14 +188,16 @@ export const playlistApi = {
     return res.json();
   },
 
-  getByUser: async (userId: string): Promise<Playlist[]> => {
-    const res = await fetch(`${API_BASE_URL}/playlists/user/${userId}`);
+  getByUser: async (userId: string, params?: PaginationParams): Promise<PaginatedResult<Playlist>> => {
+    const query = buildPaginationQuery(params);
+    const res = await fetch(`${API_BASE_URL}/playlists/user/${userId}${query}`);
     if (!res.ok) throw new Error('Failed to fetch user playlists');
     return res.json();
   },
 
-  getPublic: async (): Promise<Playlist[]> => {
-    const res = await fetch(`${API_BASE_URL}/playlists/public`);
+  getPublic: async (params?: PaginationParams): Promise<PaginatedResult<Playlist>> => {
+    const query = buildPaginationQuery(params);
+    const res = await fetch(`${API_BASE_URL}/playlists/public${query}`);
     if (!res.ok) throw new Error('Failed to fetch public playlists');
     return res.json();
   },

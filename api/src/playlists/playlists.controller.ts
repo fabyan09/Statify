@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   Put,
+  Query,
 } from '@nestjs/common';
 import { PlaylistsService } from './playlists.service';
 import { CreatePlaylistDto } from './dto/create-playlist.dto';
@@ -17,6 +18,7 @@ import {
   AddCollaboratorDto,
   RemoveCollaboratorDto,
 } from './dto/manage-playlist.dto';
+import { PaginationDto } from '../common/dto/pagination.dto';
 
 @Controller('playlists')
 export class PlaylistsController {
@@ -28,18 +30,18 @@ export class PlaylistsController {
   }
 
   @Get()
-  findAll() {
-    return this.playlistsService.findAll();
+  findAll(@Query() paginationDto: PaginationDto) {
+    return this.playlistsService.findAll(paginationDto);
   }
 
   @Get('public')
-  findPublicPlaylists() {
-    return this.playlistsService.findPublicPlaylists();
+  findPublicPlaylists(@Query() paginationDto: PaginationDto) {
+    return this.playlistsService.findPublicPlaylists(paginationDto);
   }
 
   @Get('user/:userId')
-  findByUser(@Param('userId') userId: string) {
-    return this.playlistsService.findByUser(userId);
+  findByUser(@Param('userId') userId: string, @Query() paginationDto: PaginationDto) {
+    return this.playlistsService.findByUser(userId, paginationDto);
   }
 
   @Get(':id')

@@ -7,6 +7,7 @@ import {
   fetchTracks,
   fetchDashboardStats,
   fetchTopArtists,
+  PaginationParams,
 } from "./api";
 
 export function useArtists() {
@@ -23,10 +24,10 @@ export function useAlbums() {
   });
 }
 
-export function useTracks() {
+export function useTracks(params?: PaginationParams) {
   return useQuery({
-    queryKey: ["tracks"],
-    queryFn: fetchTracks,
+    queryKey: ["tracks", params?.page, params?.limit],
+    queryFn: () => fetchTracks(params),
   });
 }
 

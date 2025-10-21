@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { ListMusic, Plus, Trash2, Users, Lock, Globe, Music } from "lucide-react";
 import Link from "next/link";
 import { Label } from "@/components/ui/label";
+import { Pagination } from "@/components/pagination";
 
 export default function PlaylistsPage() {
   const router = useRouter();
@@ -21,6 +22,8 @@ export default function PlaylistsPage() {
   const [newPlaylistName, setNewPlaylistName] = useState("");
   const [newPlaylistDesc, setNewPlaylistDesc] = useState("");
   const [isPublic, setIsPublic] = useState(false);
+  const [publicPage, setPublicPage] = useState(1);
+  const [publicLimit] = useState(12);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -29,18 +32,21 @@ export default function PlaylistsPage() {
     }
   }, [authLoading, currentUser, router]);
 
-  // Fetch user's playlists
-  const { data: userPlaylists = [], isLoading } = useQuery({
+  // Fetch user's playlists (no pagination for user's own playlists)
+  const { data: userPlaylistsResult, isLoading } = useQuery({
     queryKey: ["playlists", "user", currentUser?._id],
-    queryFn: () => playlistApi.getByUser(currentUser!._id),
+    queryFn: () => playlistApi.getByUser(currentUser!._id, { limit: 1000 }),
     enabled: !!currentUser,
   });
 
-  // Fetch public playlists
-  const { data: publicPlaylists = [] } = useQuery({
-    queryKey: ["playlists", "public"],
-    queryFn: () => playlistApi.getPublic(),
+  // Fetch public playlists with pagination
+  const { data: publicPlaylistsResult } = useQuery({
+    queryKey: ["playlists", "public", publicPage, publicLimit],
+    queryFn: () => playlistApi.getPublic({ page: publicPage, limit: publicLimit }),
   });
+
+  const userPlaylists = userPlaylistsResult?.data || [];
+  const publicPlaylists = publicPlaylistsResult?.data || [];
 
   // Create playlist mutation
   const createMutation = useMutation({
@@ -299,7 +305,7 @@ export default function PlaylistsPage() {
         <div className="space-y-4">
           <h2 className="text-2xl font-bold">Public Playlists</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {publicPlaylists.slice(0, 6).map((playlist) => (
+            {publicPlaylists.map((playlist) => (
               <Card key={playlist._id} className="hover:shadow-lg transition-shadow">
                 <CardHeader>
                   <CardTitle className="line-clamp-1">{playlist.name}</CardTitle>
@@ -329,6 +335,12 @@ export default function PlaylistsPage() {
               </Card>
             ))}
           </div>
+          {publicPlaylistsResult?.meta && (
+            <Pagination
+              meta={publicPlaylistsResult.meta}
+              onPageChange={(newPage) => setPublicPage(newPage)}
+            />
+          )}
         </div>
       )}
     </div>

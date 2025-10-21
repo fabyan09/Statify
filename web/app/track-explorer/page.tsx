@@ -9,23 +9,28 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useTracks, useAlbums, useArtists } from "@/lib/hooks";
 import { ExternalLink, Search, ArrowUpDown } from "lucide-react";
 import Image from "next/image";
+import { Pagination } from "@/components/pagination";
 
 type SortField = "name" | "artist" | "album" | "duration_ms" | "popularity";
 type SortDirection = "asc" | "desc";
 
 export default function TrackExplorerPage() {
-  const { data: tracks, isLoading: tracksLoading, error: tracksError } = useTracks();
+  const [page, setPage] = useState(1);
+  const [limit] = useState(50);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [explicitFilter, setExplicitFilter] = useState<string>("all");
+  const [durationFilter, setDurationFilter] = useState<string>("all");
+  const [sortField, setSortField] = useState<SortField>("popularity");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+
+  const { data: tracksResult, isLoading: tracksLoading, error: tracksError } = useTracks({ page, limit });
   const { data: albums, isLoading: albumsLoading, error: albumsError } = useAlbums();
   const { data: artists, isLoading: artistsLoading, error: artistsError } = useArtists();
 
   const isLoading = tracksLoading || albumsLoading || artistsLoading;
   const error = tracksError || albumsError || artistsError;
 
-  const [searchTerm, setSearchTerm] = useState("");
-  const [explicitFilter, setExplicitFilter] = useState<string>("all");
-  const [durationFilter, setDurationFilter] = useState<string>("all");
-  const [sortField, setSortField] = useState<SortField>("popularity");
-  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+  const tracks = tracksResult?.data || [];
 
   // Create album and artist lookups
   const albumMap = albums ? new Map(albums.map((album) => [album._id, album])) : new Map();
@@ -133,7 +138,7 @@ export default function TrackExplorerPage() {
       <div>
         <h1 className="text-3xl font-bold mb-2">Track Explorer</h1>
         <p className="text-muted-foreground">
-          Browse and filter through {tracks.length} tracks
+          Browse and filter through {tracksResult?.meta.total || 0} tracks
         </p>
       </div>
 
@@ -245,7 +250,7 @@ export default function TrackExplorerPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredAndSortedTracks.slice(0, 100).map((track) => {
+              {filteredAndSortedTracks.map((track) => {
                 const album = albumMap.get(track.album_id);
                 const trackArtists = track.artist_ids.map((id) => artistMap.get(id)).filter(Boolean);
                 const artistNames = trackArtists.map((artist) => artist?.name).join(", ") || "Unknown Artist";
@@ -319,13 +324,15 @@ export default function TrackExplorerPage() {
               })}
             </TableBody>
           </Table>
-          {filteredAndSortedTracks.length > 100 && (
-            <p className="text-sm text-muted-foreground text-center mt-4">
-              Showing first 100 results. Use filters to narrow down your search.
-            </p>
-          )}
         </CardContent>
       </Card>
+
+      {tracksResult?.meta && (
+        <Pagination
+          meta={tracksResult.meta}
+          onPageChange={(newPage) => setPage(newPage)}
+        />
+      )}
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { Cache } from 'cache-manager';
 import { CreateTrackDto } from './dto/create-track.dto';
 import { UpdateTrackDto } from './dto/update-track.dto';
 import { Track, TrackDocument } from './entities/track.entity';
+import { PaginationDto, PaginatedResult } from '../common/dto/pagination.dto';
 
 @Injectable()
 export class TracksService {
@@ -22,14 +23,36 @@ export class TracksService {
     return result;
   }
 
-  async findAll() {
-    const cacheKey = 'all-tracks';
-    const cached = await this.cacheManager.get(cacheKey);
-    if (cached) return cached;
+  async findAll(paginationDto?: PaginationDto): Promise<PaginatedResult<Track>> {
+    const page = paginationDto?.page || 1;
+    const limit = paginationDto?.limit || 20;
+    const skip = (page - 1) * limit;
 
-    const tracks = await this.trackModel.find().exec();
-    await this.cacheManager.set(cacheKey, tracks);
-    return tracks;
+    const cacheKey = `tracks-page-${page}-limit-${limit}`;
+    const cached = await this.cacheManager.get(cacheKey);
+    if (cached) return cached as PaginatedResult<Track>;
+
+    const [data, total] = await Promise.all([
+      this.trackModel.find().skip(skip).limit(limit).exec(),
+      this.trackModel.countDocuments().exec(),
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    const result = {
+      data,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+      },
+    };
+
+    await this.cacheManager.set(cacheKey, result);
+    return result;
   }
 
   async findOne(id: string) {

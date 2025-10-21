@@ -10,6 +10,7 @@ import {
   AddCollaboratorDto,
   RemoveCollaboratorDto,
 } from './dto/manage-playlist.dto';
+import { PaginationDto, PaginatedResult } from '../common/dto/pagination.dto';
 
 @Injectable()
 export class PlaylistsService {
@@ -22,8 +23,29 @@ export class PlaylistsService {
     return createdPlaylist.save();
   }
 
-  async findAll(): Promise<Playlist[]> {
-    return this.playlistModel.find().exec();
+  async findAll(paginationDto?: PaginationDto): Promise<PaginatedResult<Playlist>> {
+    const page = paginationDto?.page || 1;
+    const limit = paginationDto?.limit || 20;
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await Promise.all([
+      this.playlistModel.find().skip(skip).limit(limit).exec(),
+      this.playlistModel.countDocuments().exec(),
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      data,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+      },
+    };
   }
 
   async findOne(id: string): Promise<Playlist> {
@@ -34,16 +56,60 @@ export class PlaylistsService {
     return playlist;
   }
 
-  async findByUser(userId: string): Promise<Playlist[]> {
-    return this.playlistModel
-      .find({
-        $or: [{ owner_id: userId }, { collaborators: userId }],
-      })
-      .exec();
+  async findByUser(userId: string, paginationDto?: PaginationDto): Promise<PaginatedResult<Playlist>> {
+    const page = paginationDto?.page || 1;
+    const limit = paginationDto?.limit || 20;
+    const skip = (page - 1) * limit;
+
+    const filter = {
+      $or: [{ owner_id: userId }, { collaborators: userId }],
+    };
+
+    const [data, total] = await Promise.all([
+      this.playlistModel.find(filter).skip(skip).limit(limit).exec(),
+      this.playlistModel.countDocuments(filter).exec(),
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      data,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+      },
+    };
   }
 
-  async findPublicPlaylists(): Promise<Playlist[]> {
-    return this.playlistModel.find({ isPublic: true }).exec();
+  async findPublicPlaylists(paginationDto?: PaginationDto): Promise<PaginatedResult<Playlist>> {
+    const page = paginationDto?.page || 1;
+    const limit = paginationDto?.limit || 20;
+    const skip = (page - 1) * limit;
+
+    const filter = { isPublic: true };
+
+    const [data, total] = await Promise.all([
+      this.playlistModel.find(filter).skip(skip).limit(limit).exec(),
+      this.playlistModel.countDocuments(filter).exec(),
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      data,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+      },
+    };
   }
 
   async update(id: string, updatePlaylistDto: UpdatePlaylistDto): Promise<Playlist> {
