@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import * as bcrypt from 'bcrypt';
 import { User, UserDocument } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -20,7 +21,15 @@ export class UsersService {
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
-    const createdUser = new this.userModel(createUserDto);
+    // Hash le mot de passe avant de sauvegarder
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(createUserDto.password, saltRounds);
+
+    const createdUser = new this.userModel({
+      ...createUserDto,
+      password: hashedPassword,
+    });
+
     return createdUser.save();
   }
 
@@ -138,6 +147,23 @@ export class UsersService {
       liked_albums: user.liked_albums,
       favorite_artists: user.favorite_artists,
     };
+  }
+
+  async login(username: string, password: string): Promise<User> {
+    const user = await this.userModel.findOne({ username }).exec();
+
+    if (!user) {
+      throw new NotFoundException('Invalid username or password');
+    }
+
+    // Comparer le mot de passe avec bcrypt
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+
+    if (!isPasswordValid) {
+      throw new NotFoundException('Invalid username or password');
+    }
+
+    return user;
   }
 
   // Nouvelles méthodes qui retournent les données complètes

@@ -297,6 +297,19 @@ export const userApi = {
     if (!res.ok) throw new Error('Failed to create user');
     return res.json();
   },
+
+  login: async (data: { username: string; password: string }): Promise<User> => {
+    const res = await fetch(`${API_BASE_URL}/users/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const error = await res.text();
+      throw new Error(error || 'Invalid username or password');
+    }
+    return res.json();
+  },
 };
 
 // Playlist API
