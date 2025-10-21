@@ -345,9 +345,9 @@ export default function DiscoverPage() {
     if (userLikedAlbums.length > 0) {
       const likedAlbumYears = userLikedAlbums
         .map((albumId: string) => albumMap.get(albumId))
-        .filter(Boolean)
-        .map((album: Album) => new Date(album.release_date).getFullYear())
-        .filter((year: number) => !isNaN(year));
+        .filter((album): album is Album => album !== undefined)
+        .map((album) => new Date(album.release_date).getFullYear())
+        .filter((year) => !isNaN(year));
 
       if (likedAlbumYears.length > 0) {
         const avgYear = Math.floor(
