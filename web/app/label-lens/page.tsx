@@ -1,9 +1,19 @@
 "use client";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState } from "react";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAlbums, useTracks } from "@/lib/hooks";
-import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Legend } from "recharts";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  ChartLegend,
+  ChartLegendContent,
+  type ChartConfig,
+} from "@/components/ui/chart";
 
 interface LabelStats {
   label: string;
@@ -25,20 +35,33 @@ interface LabelAccumulator {
   compilations: number;
 }
 
-const COLORS = [
-  "#2563eb",
-  "#7c3aed",
-  "#db2777",
-  "#ea580c",
-  "#65a30d",
-  "#0891b2",
-  "#4f46e5",
-  "#be123c",
-];
+const barChartConfig = {
+  avgPopularity: {
+    label: "Avg Popularity",
+    color: "#52525b",
+  },
+} satisfies ChartConfig;
+
+const pieChartConfig = {
+  singles: {
+    label: "Singles",
+    color: "#3b82f6",
+  },
+  albums: {
+    label: "Albums",
+    color: "#8b5cf6",
+  },
+  compilations: {
+    label: "Compilations",
+    color: "#ec4899",
+  },
+} satisfies ChartConfig;
 
 export default function LabelLensPage() {
   const { data: albums, isLoading: albumsLoading, error: albumsError } = useAlbums();
   const { data: tracksResult, isLoading: tracksLoading, error: tracksError } = useTracks({ limit: 1000 });
+
+  const [displayedLabels, setDisplayedLabels] = useState(20);
 
   const isLoading = albumsLoading || tracksLoading;
   const error = albumsError || tracksError;
@@ -86,18 +109,23 @@ export default function LabelLensPage() {
   // Album type distribution (overall)
   const albumTypeData = albums ? [
     {
-      name: "Singles",
-      value: albums.filter((a) => a.album_type === "single").length,
+      type: "singles",
+      count: albums.filter((a) => a.album_type === "single").length,
+      fill: "var(--color-singles)",
     },
     {
-      name: "Albums",
-      value: albums.filter((a) => a.album_type === "album").length,
+      type: "albums",
+      count: albums.filter((a) => a.album_type === "album").length,
+      fill: "var(--color-albums)",
     },
     {
-      name: "Compilations",
-      value: albums.filter((a) => a.album_type === "compilation").length,
+      type: "compilations",
+      count: albums.filter((a) => a.album_type === "compilation").length,
+      fill: "var(--color-compilations)",
     },
   ] : [];
+
+  const totalAlbums = albumTypeData.reduce((acc, item) => acc + item.count, 0);
 
   if (error) {
     return (
@@ -181,54 +209,71 @@ export default function LabelLensPage() {
             <CardDescription>Average popularity score across albums</CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={350}>
+            <ChartContainer config={barChartConfig} className="h-[350px] w-full">
               <BarChart data={top10Labels}>
-                <CartesianGrid strokeDasharray="3 3" />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis
                   dataKey="label"
                   angle={-45}
                   textAnchor="end"
                   height={100}
                   tick={{ fontSize: 12 }}
+                  tickLine={false}
+                  axisLine={false}
                 />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="avgPopularity" fill="#2563eb" name="Avg Popularity" />
+                <YAxis
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={(value) => `${value}`}
+                />
+                <ChartTooltip
+                  cursor={false}
+                  content={<ChartTooltipContent hideLabel />}
+                />
+                <Bar dataKey="avgPopularity" fill="var(--color-avgPopularity)" radius={8} />
               </BarChart>
-            </ResponsiveContainer>
+            </ChartContainer>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
+        <Card className="flex flex-col">
+          <CardHeader className="items-center pb-0">
             <CardTitle>Album Type Distribution</CardTitle>
             <CardDescription>Singles vs Albums vs Compilations</CardDescription>
           </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={350}>
+          <CardContent className="flex-1 pb-0">
+            <ChartContainer
+              config={pieChartConfig}
+              className="mx-auto aspect-square max-h-[300px]"
+            >
               <PieChart>
+                <ChartTooltip
+                  cursor={false}
+                  content={<ChartTooltipContent hideLabel />}
+                />
                 <Pie
                   data={albumTypeData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    ({ name, percent }: any) =>
-                      `${name}: ${(percent * 100).toFixed(0)}%`
-                  }
-                  outerRadius={100}
-                  fill="#8884d8"
-                  dataKey="value"
+                  dataKey="count"
+                  nameKey="type"
+                  innerRadius={60}
+                  strokeWidth={5}
                 >
-                  {albumTypeData.map((_, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
+                  <Legend
+                    content={<ChartLegendContent nameKey="type" />}
+                    className="-translate-y-2 flex-wrap gap-2 [&>*]:basis-1/4 [&>*]:justify-center"
+                  />
                 </Pie>
-                <Tooltip />
               </PieChart>
-            </ResponsiveContainer>
+            </ChartContainer>
           </CardContent>
+          <CardFooter className="flex-col gap-2 text-sm">
+            <div className="flex items-center gap-2 font-medium leading-none">
+              Total of {totalAlbums} albums across all types
+            </div>
+            <div className="leading-none text-muted-foreground">
+              Distribution of album types in the database
+            </div>
+          </CardFooter>
         </Card>
       </div>
 
@@ -236,11 +281,13 @@ export default function LabelLensPage() {
       <Card>
         <CardHeader>
           <CardTitle>Label Rankings</CardTitle>
-          <CardDescription>Complete label statistics sorted by popularity</CardDescription>
+          <CardDescription>
+            Complete label statistics sorted by popularity ({displayedLabels} of {labelStats.length} labels)
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {labelStats.slice(0, 20).map((stat, index) => (
+            {labelStats.slice(0, displayedLabels).map((stat, index) => (
               <div
                 key={stat.label}
                 className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
@@ -282,6 +329,16 @@ export default function LabelLensPage() {
               </div>
             ))}
           </div>
+          {displayedLabels < labelStats.length && (
+            <div className="flex justify-center mt-6">
+              <Button
+                onClick={() => setDisplayedLabels((prev) => prev + 20)}
+                variant="outline"
+              >
+                Show More ({labelStats.length - displayedLabels} remaining)
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
