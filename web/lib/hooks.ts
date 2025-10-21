@@ -199,8 +199,8 @@ export function useSyncArtistAlbums() {
         const result = await syncArtistAlbums(artistId);
         console.log('useSyncArtistAlbums: API response:', result);
         return result;
-      } catch (error: any) {
-        console.error('useSyncArtistAlbums: API error:', error.message);
+      } catch (error) {
+        console.error('useSyncArtistAlbums: API error:', error instanceof Error ? error.message : 'Unknown error');
         throw error;
       }
     },
@@ -215,9 +215,9 @@ export function useSyncArtistAlbums() {
       await queryClient.invalidateQueries({ queryKey: ["tracks"] });
       console.log('useSyncArtistAlbums: All done!');
     },
-    onError: (error: any) => {
+    onError: (error) => {
       console.error('useSyncArtistAlbums: Error!', error);
-      console.error('useSyncArtistAlbums: Error details:', error.message);
+      console.error('useSyncArtistAlbums: Error details:', error instanceof Error ? error.message : 'Unknown error');
     },
   });
 }
