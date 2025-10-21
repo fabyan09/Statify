@@ -144,7 +144,7 @@ export function AvgPopularityByYearChart({ data }: AvgPopularityByYearChartProps
             />
             <Area
               dataKey="avgPopularity"
-              type="natural"
+              type="monotone"
               fill="url(#fillAvgPopularity)"
               stroke="var(--color-avgPopularity)"
             />
