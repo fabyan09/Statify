@@ -107,7 +107,7 @@ export default function AuthPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-center text-muted-foreground">
-              Pour vous connecter à un autre compte, veuillez d'abord vous déconnecter.
+              Pour vous connecter à un autre compte, veuillez d&apos;abord vous déconnecter.
             </p>
             <div className="flex gap-3">
               <Button

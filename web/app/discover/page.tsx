@@ -4,12 +4,13 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { useArtists, useAlbums, useTracks, useUser, useAddToLibrary, useRemoveFromLibrary, useUserPlaylists } from "@/lib/hooks";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Heart, Music, Sparkles, TrendingUp, Clock, Tag } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import type { User, Playlist } from "@/lib/api";
 
 interface Artist {
   _id: string;
@@ -86,11 +87,11 @@ export default function DiscoverPage() {
   }, [user, artists, albums, tracksData, userPlaylists]);
 
   const generateRecommendations = (
-    user: any,
+    user: User,
     allArtists: Artist[],
     allAlbums: Album[],
     allTracks: Track[],
-    playlists: any[]
+    _playlists: Playlist[]
   ): RecommendationSection[] => {
     const sections: RecommendationSection[] = [];
 
@@ -163,12 +164,6 @@ export default function DiscoverPage() {
         });
       }
     });
-
-    // Combiner avec favorite_artists
-    const allFavoriteArtistIds = new Set([
-      ...userFavoriteArtists,
-      ...Array.from(likedTrackArtists)
-    ]);
 
     // 1. ARTISTES SIMILAIRES PAR GENRE (si l'utilisateur a des préférences)
     if (favoriteGenres.size > 0) {
