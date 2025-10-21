@@ -14,6 +14,7 @@ import {
   syncAlbumTracks,
   search,
   PaginatedResult,
+  fetchRecommendations,
 } from "./api";
 import { SearchTrack, SearchAlbum, SearchArtist, SearchPlaylist, SearchUser } from "./types";
 
@@ -226,4 +227,13 @@ export function useSearch(
     enabled: !!query && query.trim().length > 0,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   }) as any;
+}
+
+export function useRecommendations(userId: string) {
+  return useQuery({
+    queryKey: ["recommendations", userId],
+    queryFn: () => fetchRecommendations(userId),
+    enabled: !!userId,
+    staleTime: 60 * 60 * 1000, // 1 heure - correspond au cache côté serveur
+  });
 }

@@ -340,6 +340,27 @@ export const userApi = {
   },
 };
 
+// Recommendations API
+export interface RecommendationSection {
+  title: string;
+  description: string;
+  icon: string;
+  type: 'artist' | 'album' | 'track';
+  items: (Artist | Album | Track)[];
+}
+
+export interface RecommendationsResponse {
+  sections: RecommendationSection[];
+}
+
+export async function fetchRecommendations(userId: string): Promise<RecommendationsResponse> {
+  const response = await fetch(`${API_BASE_URL}/recommendations/${userId}`, {
+    cache: 'no-store',
+  });
+  if (!response.ok) throw new Error("Failed to fetch recommendations");
+  return response.json();
+}
+
 // Playlist API
 export interface Playlist {
   _id: string;

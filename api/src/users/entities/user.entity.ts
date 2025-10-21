@@ -20,6 +20,18 @@ export class User {
   @Prop({ type: [String], default: [] })
   favorite_artists: string[];
 
+  @Prop({ type: Object, default: null })
+  recommendations?: {
+    sections: Array<{
+      title: string;
+      description: string;
+      icon: string;
+      type: 'artist' | 'album' | 'track';
+      itemIds: string[]; // Stocker seulement les IDs
+    }>;
+    lastUpdated: Date;
+  };
+
   @Prop()
   createdAt?: Date;
 

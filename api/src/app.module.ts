@@ -11,6 +11,7 @@ import { StatsModule } from './stats/stats.module';
 import { UsersModule } from './users/users.module';
 import { PlaylistsModule } from './playlists/playlists.module';
 import { SearchModule } from './search/search.module';
+import { RecommendationsModule } from './recommendations/recommendations.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { SearchModule } from './search/search.module';
     UsersModule,
     PlaylistsModule,
     SearchModule,
+    RecommendationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
