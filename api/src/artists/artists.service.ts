@@ -36,6 +36,22 @@ export class ArtistsService {
     return this.artistModel.findById(id).exec();
   }
 
+  async findByIds(ids: string[]) {
+    return this.artistModel.find({ _id: { $in: ids } }).exec();
+  }
+
+  async getArtistAlbums(artistId: string) {
+    // Cette méthode sera implémentée dans le controller en utilisant AlbumsService
+    // pour éviter la dépendance circulaire
+    throw new Error('Use controller method instead');
+  }
+
+  async getArtistTracks(artistId: string) {
+    // Cette méthode sera implémentée dans le controller en utilisant TracksService
+    // pour éviter la dépendance circulaire
+    throw new Error('Use controller method instead');
+  }
+
   async update(id: string, updateArtistDto: UpdateArtistDto) {
     const result = await this.artistModel
       .findByIdAndUpdate(id, updateArtistDto, { new: true })

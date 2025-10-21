@@ -30,12 +30,17 @@ export class TracksService {
 
     const cacheKey = `tracks-page-${page}-limit-${limit}`;
     const cached = await this.cacheManager.get(cacheKey);
-    if (cached) return cached as PaginatedResult<Track>;
+    if (cached) {
+      console.log(`[TracksService.findAll] Returning from cache, page: ${page}, limit: ${limit}, count: ${(cached as any).data.length}`);
+      return cached as PaginatedResult<Track>;
+    }
 
     const [data, total] = await Promise.all([
       this.trackModel.find().skip(skip).limit(limit).exec(),
       this.trackModel.countDocuments().exec(),
     ]);
+
+    console.log(`[TracksService.findAll] Fetched from DB, page: ${page}, limit: ${limit}, count: ${data.length}, total: ${total}`);
 
     const totalPages = Math.ceil(total / limit);
 
@@ -59,6 +64,17 @@ export class TracksService {
     return this.trackModel.findById(id).exec();
   }
 
+  async findByIds(ids: string[]) {
+    return this.trackModel.find({ _id: { $in: ids } }).exec();
+  }
+
+  async findByArtist(artistId: string) {
+    return this.trackModel
+      .find({ artist_ids: artistId })
+      .sort({ popularity: -1 }) // Most popular first
+      .exec();
+  }
+
   async update(id: string, updateTrackDto: UpdateTrackDto) {
     const result = await this.trackModel
       .findByIdAndUpdate(id, updateTrackDto, { new: true })
@@ -73,5 +89,20 @@ export class TracksService {
     // Invalidate cache
     await this.cacheManager.del('all-tracks');
     return result;
+  }
+
+  async upsert(id: string, trackData: any) {
+    const result = await this.trackModel
+      .findByIdAndUpdate(id, trackData, { upsert: true, new: true })
+      .exec();
+    // Invalidate only tracks cache
+    await this.invalidateTracksCache();
+    return result;
+  }
+
+  private async invalidateTracksCache() {
+    // Clear the entire cache since we can't easily iterate keys
+    // This is acceptable since cache is rebuilt quickly on next request
+    await this.cacheManager.clear();
   }
 }

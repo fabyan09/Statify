@@ -10,6 +10,7 @@ import { TracksModule } from './tracks/tracks.module';
 import { StatsModule } from './stats/stats.module';
 import { UsersModule } from './users/users.module';
 import { PlaylistsModule } from './playlists/playlists.module';
+import { SearchModule } from './search/search.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { PlaylistsModule } from './playlists/playlists.module';
     StatsModule,
     UsersModule,
     PlaylistsModule,
+    SearchModule,
   ],
   controllers: [AppController],
   providers: [AppService],

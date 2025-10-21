@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -11,15 +11,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   useAlbum,
   useArtists,
-  useTracks,
   usePlaylists,
   useUser,
   useAddToLibrary,
   useRemoveFromLibrary,
   useAddTracksToPlaylist,
+  useSyncAlbumTracks,
 } from "@/lib/hooks";
+import { useQuery } from "@tanstack/react-query";
+import { fetchAlbumTracks } from "@/lib/api";
 import { useAuth } from "@/contexts/auth-context";
-import { ExternalLink, Heart, Plus, ArrowLeft, Calendar, Music } from "lucide-react";
+import { ExternalLink, Heart, Plus, ArrowLeft, Calendar, Music, RefreshCw } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -29,10 +31,13 @@ export default function AlbumDetailPage() {
 
   const { data: album, isLoading: albumLoading } = useAlbum(albumId);
   const { data: artists, isLoading: artistsLoading } = useArtists();
-  const { data: tracksResult, isLoading: tracksLoading } = useTracks({ limit: 1000 });
+  const { data: tracks, isLoading: tracksLoading } = useQuery({
+    queryKey: ["album-tracks", albumId],
+    queryFn: () => fetchAlbumTracks(albumId),
+    enabled: !!albumId,
+  });
   const { data: playlistsResult } = usePlaylists({ limit: 1000 });
 
-  const tracks = tracksResult?.data || [];
   const playlists = playlistsResult?.data || [];
 
   // Get authenticated user
@@ -42,23 +47,29 @@ export default function AlbumDetailPage() {
   const addToLibrary = useAddToLibrary();
   const removeFromLibrary = useRemoveFromLibrary();
   const addTracksToPlaylist = useAddTracksToPlaylist();
+  const syncAlbumTracks = useSyncAlbumTracks();
 
   const [playlistDialogOpen, setPlaylistDialogOpen] = useState(false);
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<string>("");
   const [selectedTrackId, setSelectedTrackId] = useState<string>("");
+  const [hasTriggeredSync, setHasTriggeredSync] = useState(false);
 
   const artistMap = artists ? new Map(artists.map((artist) => [artist._id, artist])) : new Map();
 
-  // Filter tracks for this album
-  const albumTracks = (tracks || [])
-    .filter((track) => track.album_id === albumId)
-    .sort((a, b) => {
-      // Sort by disc number, then track number
-      if (a.disc_number !== b.disc_number) {
-        return a.disc_number - b.disc_number;
-      }
-      return a.track_number - b.track_number;
-    });
+  // Auto-sync tracks from Spotify if not already synced
+  useEffect(() => {
+    if (album && !album.spotify_synced && !hasTriggeredSync && !syncAlbumTracks.isPending) {
+      console.log('Triggering sync for album:', albumId, 'spotify_synced:', album.spotify_synced);
+      syncAlbumTracks.mutate(albumId);
+      setHasTriggeredSync(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [album?.spotify_synced, albumId, hasTriggeredSync]);
+
+  // Tracks are already fetched and sorted for this album
+  const albumTracks = tracks || [];
+
+  console.log(`[AlbumPage] Album tracks fetched: ${albumTracks.length}`);
 
   const isLoading = albumLoading || artistsLoading || tracksLoading;
 
@@ -242,7 +253,7 @@ export default function AlbumDetailPage() {
               )}
 
               {/* Actions */}
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 flex-wrap">
                 <Button
                   variant={isAlbumLiked() ? "default" : "outline"}
                   onClick={handleAlbumLikeToggle}
@@ -281,10 +292,20 @@ export default function AlbumDetailPage() {
       {/* Track List */}
       <Card className="!bg-background/10">
         <CardHeader>
-          <CardTitle>Tracks</CardTitle>
-          <CardDescription>
-            {albumTracks.length} track{albumTracks.length !== 1 ? "s" : ""}
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Tracks</CardTitle>
+              <CardDescription>
+                {albumTracks.length} track{albumTracks.length !== 1 ? "s" : ""}
+              </CardDescription>
+            </div>
+            {syncAlbumTracks.isPending && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <RefreshCw className="h-4 w-4 animate-spin" />
+                Synchronisation des tracks en cours...
+              </div>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           <Table>

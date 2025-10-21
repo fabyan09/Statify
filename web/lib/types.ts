@@ -36,6 +36,7 @@ export interface Album {
   artist_ids: string[];
   track_ids: string[];
   genres: string[];
+  spotify_synced: boolean;
 }
 
 export interface Track {

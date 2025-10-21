@@ -43,16 +43,40 @@ export async function fetchArtists(): Promise<Artist[]> {
 
 export async function fetchAlbums(): Promise<Album[]> {
   const response = await fetch(`${API_BASE_URL}/albums`, {
-    next: { revalidate: CACHE_REVALIDATE },
+    cache: 'no-store', // Pas de cache Next.js, React Query gère le cache
   });
   if (!response.ok) throw new Error("Failed to fetch albums");
+  return response.json();
+}
+
+export async function fetchAlbum(id: string): Promise<Album> {
+  const response = await fetch(`${API_BASE_URL}/albums/${id}`, {
+    cache: 'no-store',
+  });
+  if (!response.ok) throw new Error("Failed to fetch album");
+  return response.json();
+}
+
+export async function syncAlbumTracks(albumId: string): Promise<{ message: string; album: Album; syncedTracks: number }> {
+  const response = await fetch(`${API_BASE_URL}/albums/${albumId}/sync-tracks`, {
+    method: 'POST',
+  });
+  if (!response.ok) throw new Error("Failed to sync album tracks");
+  return response.json();
+}
+
+export async function fetchAlbumTracks(albumId: string): Promise<Track[]> {
+  const response = await fetch(`${API_BASE_URL}/albums/${albumId}/tracks`, {
+    cache: 'no-store',
+  });
+  if (!response.ok) throw new Error("Failed to fetch album tracks");
   return response.json();
 }
 
 export async function fetchTracks(params?: PaginationParams): Promise<PaginatedResult<Track>> {
   const query = buildPaginationQuery(params);
   const response = await fetch(`${API_BASE_URL}/tracks${query}`, {
-    next: { revalidate: CACHE_REVALIDATE },
+    cache: 'no-store', // Pas de cache Next.js, React Query gère le cache
   });
   if (!response.ok) throw new Error("Failed to fetch tracks");
   return response.json();
@@ -100,6 +124,101 @@ export async function fetchTopArtists(limit = 10): Promise<TopArtist[]> {
   return response.json();
 }
 
+// Search API
+export async function search(
+  query: string,
+  type: 'tracks' | 'albums' | 'artists' | 'playlists' | 'users',
+  params?: PaginationParams
+): Promise<PaginatedResult<any>> {
+  const searchParams = new URLSearchParams();
+  searchParams.set('q', query);
+  searchParams.set('type', type);
+  if (params?.page) searchParams.set('page', params.page.toString());
+  if (params?.limit) searchParams.set('limit', params.limit.toString());
+
+  const response = await fetch(`${API_BASE_URL}/search?${searchParams.toString()}`, {
+    cache: 'no-store',
+  });
+  if (!response.ok) throw new Error("Failed to search");
+  return response.json();
+}
+
+// Artist API
+export async function fetchArtistAlbums(artistId: string): Promise<Album[]> {
+  const response = await fetch(`${API_BASE_URL}/artists/${artistId}/albums`, {
+    cache: 'no-store',
+  });
+  if (!response.ok) throw new Error("Failed to fetch artist albums");
+  return response.json();
+}
+
+export async function fetchArtistTracks(artistId: string): Promise<Track[]> {
+  const response = await fetch(`${API_BASE_URL}/artists/${artistId}/tracks`, {
+    cache: 'no-store',
+  });
+  if (!response.ok) throw new Error("Failed to fetch artist tracks");
+  return response.json();
+}
+
+// Playlist API
+export async function fetchPlaylistTracks(playlistId: string): Promise<Track[]> {
+  const response = await fetch(`${API_BASE_URL}/playlists/${playlistId}/tracks`, {
+    cache: 'no-store',
+  });
+  if (!response.ok) throw new Error("Failed to fetch playlist tracks");
+  return response.json();
+}
+
+// Stats API
+export interface CohortData {
+  period: string;
+  releases: number;
+  avgPopularity: number;
+  singles: number;
+  albums: number;
+  compilations: number;
+}
+
+export async function fetchReleaseCohorts(granularity: 'year' | 'month' = 'year'): Promise<CohortData[]> {
+  const response = await fetch(`${API_BASE_URL}/stats/release-cohorts?granularity=${granularity}`, {
+    cache: 'no-store',
+  });
+  if (!response.ok) throw new Error("Failed to fetch release cohorts");
+  return response.json();
+}
+
+export interface LabelStats {
+  label: string;
+  albumCount: number;
+  trackCount: number;
+  avgPopularity: number;
+  singles: number;
+  albums: number;
+  compilations: number;
+}
+
+export async function fetchLabelStats(): Promise<LabelStats[]> {
+  const response = await fetch(`${API_BASE_URL}/stats/labels`, {
+    cache: 'no-store',
+  });
+  if (!response.ok) throw new Error("Failed to fetch label stats");
+  return response.json();
+}
+
+export interface Collaboration {
+  artist1: string;
+  artist2: string;
+  count: number;
+}
+
+export async function fetchCollaborations(): Promise<Collaboration[]> {
+  const response = await fetch(`${API_BASE_URL}/stats/collaborations`, {
+    cache: 'no-store',
+  });
+  if (!response.ok) throw new Error("Failed to fetch collaborations");
+  return response.json();
+}
+
 // User API
 export interface User {
   _id: string;
@@ -128,6 +247,24 @@ export const userApi = {
   getLibrary: async (id: string) => {
     const res = await fetch(`${API_BASE_URL}/users/${id}/library`);
     if (!res.ok) throw new Error('Failed to fetch library');
+    return res.json();
+  },
+
+  getLikedTracks: async (id: string): Promise<Track[]> => {
+    const res = await fetch(`${API_BASE_URL}/users/${id}/library/tracks`);
+    if (!res.ok) throw new Error('Failed to fetch liked tracks');
+    return res.json();
+  },
+
+  getLikedAlbums: async (id: string): Promise<Album[]> => {
+    const res = await fetch(`${API_BASE_URL}/users/${id}/library/albums`);
+    if (!res.ok) throw new Error('Failed to fetch liked albums');
+    return res.json();
+  },
+
+  getFavoriteArtists: async (id: string): Promise<Artist[]> => {
+    const res = await fetch(`${API_BASE_URL}/users/${id}/library/artists`);
+    if (!res.ok) throw new Error('Failed to fetch favorite artists');
     return res.json();
   },
 

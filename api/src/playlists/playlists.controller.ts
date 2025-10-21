@@ -49,6 +49,11 @@ export class PlaylistsController {
     return this.playlistsService.findOne(id);
   }
 
+  @Get(':id/tracks')
+  getPlaylistTracks(@Param('id') id: string) {
+    return this.playlistsService.getPlaylistTracks(id);
+  }
+
   @Patch(':id')
   update(@Param('id') id: string, @Body() updatePlaylistDto: UpdatePlaylistDto) {
     return this.playlistsService.update(id, updatePlaylistDto);

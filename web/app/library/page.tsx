@@ -24,30 +24,31 @@ export default function LibraryPage() {
     }
   }, [authLoading, currentUser, router]);
 
-  // Fetch user library
+  // Fetch user library (for counts)
   const { data: user, isLoading: userLoading } = useQuery({
     queryKey: ["user", currentUser?._id],
     queryFn: () => userApi.getById(currentUser!._id),
     enabled: !!currentUser,
   });
 
-  // Fetch all tracks, albums, artists
-  const { data: tracksResult } = useQuery({
-    queryKey: ["tracks"],
-    queryFn: () => fetchTracks({ limit: 1000 }),
+  // Fetch liked tracks, albums, artists with complete data from API
+  const { data: likedTracks = [] } = useQuery({
+    queryKey: ["user-liked-tracks", currentUser?._id],
+    queryFn: () => userApi.getLikedTracks(currentUser!._id),
+    enabled: !!currentUser,
   });
 
-  const { data: allAlbums = [] } = useQuery({
-    queryKey: ["albums"],
-    queryFn: fetchAlbums,
+  const { data: likedAlbums = [] } = useQuery({
+    queryKey: ["user-liked-albums", currentUser?._id],
+    queryFn: () => userApi.getLikedAlbums(currentUser!._id),
+    enabled: !!currentUser,
   });
 
-  const { data: allArtists = [] } = useQuery({
-    queryKey: ["artists"],
-    queryFn: fetchArtists,
+  const { data: favoriteArtists = [] } = useQuery({
+    queryKey: ["user-favorite-artists", currentUser?._id],
+    queryFn: () => userApi.getFavoriteArtists(currentUser!._id),
+    enabled: !!currentUser,
   });
-
-  const allTracks = tracksResult?.data || [];
 
   // Remove from library mutation
   const removeMutation = useMutation({
@@ -55,6 +56,9 @@ export default function LibraryPage() {
       userApi.removeFromLibrary(currentUser!._id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["user", currentUser?._id] });
+      queryClient.invalidateQueries({ queryKey: ["user-liked-tracks", currentUser?._id] });
+      queryClient.invalidateQueries({ queryKey: ["user-liked-albums", currentUser?._id] });
+      queryClient.invalidateQueries({ queryKey: ["user-favorite-artists", currentUser?._id] });
     },
   });
 
@@ -65,10 +69,6 @@ export default function LibraryPage() {
       </div>
     );
   }
-
-  const likedTracks = allTracks.filter((track) => user?.liked_tracks.includes(track._id));
-  const likedAlbums = allAlbums.filter((album) => user?.liked_albums.includes(album._id));
-  const favoriteArtists = allArtists.filter((artist) => user?.favorite_artists.includes(artist._id));
 
   return (
     <div className="space-y-8">
@@ -123,7 +123,7 @@ export default function LibraryPage() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-3 !bg-background/10">
           <TabsTrigger value="tracks">Tracks</TabsTrigger>
           <TabsTrigger value="albums">Albums</TabsTrigger>
           <TabsTrigger value="artists">Artists</TabsTrigger>

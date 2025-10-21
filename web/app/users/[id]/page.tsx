@@ -188,7 +188,7 @@ export default function UserProfilePage() {
 
       {/* Tabs: Playlists and Liked Tracks */}
       <Tabs defaultValue="playlists">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-2 !bg-background/10">
           <TabsTrigger value="playlists">Playlists</TabsTrigger>
           <TabsTrigger value="tracks">Liked Tracks</TabsTrigger>
         </TabsList>

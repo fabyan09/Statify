@@ -211,7 +211,7 @@ export default function SearchPage() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-5 !bg-background/10">
           <TabsTrigger value="tracks" className="flex items-center gap-2">
             <Music className="h-4 w-4" />
             Tracks ({filteredTracks.length})

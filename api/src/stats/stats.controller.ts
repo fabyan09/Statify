@@ -16,4 +16,21 @@ export class StatsController {
   ) {
     return this.statsService.getTopArtists(limit || 10);
   }
+
+  @Get('release-cohorts')
+  async getReleaseCohorts(
+    @Query('granularity') granularity?: 'year' | 'month',
+  ) {
+    return this.statsService.getReleaseCohorts(granularity || 'year');
+  }
+
+  @Get('labels')
+  async getLabelStats() {
+    return this.statsService.getLabelStats();
+  }
+
+  @Get('collaborations')
+  async getCollaborations() {
+    return this.statsService.getCollaborations();
+  }
 }

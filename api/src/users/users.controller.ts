@@ -39,6 +39,21 @@ export class UsersController {
     return this.usersService.getUserLibrary(id);
   }
 
+  @Get(':id/library/tracks')
+  getUserLikedTracks(@Param('id') id: string) {
+    return this.usersService.getUserLikedTracks(id);
+  }
+
+  @Get(':id/library/albums')
+  getUserLikedAlbums(@Param('id') id: string) {
+    return this.usersService.getUserLikedAlbums(id);
+  }
+
+  @Get(':id/library/artists')
+  getUserFavoriteArtists(@Param('id') id: string) {
+    return this.usersService.getUserFavoriteArtists(id);
+  }
+
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
     return this.usersService.update(id, updateUserDto);

@@ -6,10 +6,18 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { AddToLibraryDto, RemoveFromLibraryDto } from './dto/update-library.dto';
 import { PaginationDto, PaginatedResult } from '../common/dto/pagination.dto';
+import { TracksService } from '../tracks/tracks.service';
+import { AlbumsService } from '../albums/albums.service';
+import { ArtistsService } from '../artists/artists.service';
 
 @Injectable()
 export class UsersService {
-  constructor(@InjectModel(User.name) private userModel: Model<UserDocument>) {}
+  constructor(
+    @InjectModel(User.name) private userModel: Model<UserDocument>,
+    private tracksService: TracksService,
+    private albumsService: AlbumsService,
+    private artistsService: ArtistsService,
+  ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
     const createdUser = new this.userModel(createUserDto);
@@ -130,5 +138,30 @@ export class UsersService {
       liked_albums: user.liked_albums,
       favorite_artists: user.favorite_artists,
     };
+  }
+
+  // Nouvelles méthodes qui retournent les données complètes
+  async getUserLikedTracks(userId: string) {
+    const user = await this.findOne(userId);
+    if (user.liked_tracks.length === 0) {
+      return [];
+    }
+    return this.tracksService.findByIds(user.liked_tracks);
+  }
+
+  async getUserLikedAlbums(userId: string) {
+    const user = await this.findOne(userId);
+    if (user.liked_albums.length === 0) {
+      return [];
+    }
+    return this.albumsService.findByIds(user.liked_albums);
+  }
+
+  async getUserFavoriteArtists(userId: string) {
+    const user = await this.findOne(userId);
+    if (user.favorite_artists.length === 0) {
+      return [];
+    }
+    return this.artistsService.findByIds(user.favorite_artists);
   }
 }

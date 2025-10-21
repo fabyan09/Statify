@@ -314,7 +314,7 @@ export default function PlaylistDetailPage() {
       </Card>
 
       <Tabs defaultValue="tracks">
-        <TabsList>
+        <TabsList className="!bg-background/10">
           <TabsTrigger value="tracks">Tracks</TabsTrigger>
           {isOwner && <TabsTrigger value="collaborators">Collaborators</TabsTrigger>}
         </TabsList>

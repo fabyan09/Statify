@@ -51,17 +51,20 @@ export class Track {
   @Prop({ type: [String], default: [] })
   artist_ids: string[];
 
-  @Prop({ required: true })
+  @Prop()
   added_at: string;
 
-  @Prop({ required: true })
+  @Prop()
   added_by: string;
 
-  @Prop({ required: true })
+  @Prop()
   playlist_id: string;
 
-  @Prop({ required: true })
+  @Prop()
   playlist_name: string;
 }
 
 export const TrackSchema = SchemaFactory.createForClass(Track);
+
+// Text index pour la recherche full-text
+TrackSchema.index({ name: 'text' });

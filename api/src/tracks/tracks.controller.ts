@@ -18,6 +18,11 @@ export class TracksController {
     return this.tracksService.findAll(paginationDto);
   }
 
+  @Post('by-ids')
+  findByIds(@Body('ids') ids: string[]) {
+    return this.tracksService.findByIds(ids);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.tracksService.findOne(id);

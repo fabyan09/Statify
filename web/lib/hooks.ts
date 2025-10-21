@@ -4,12 +4,15 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   fetchArtists,
   fetchAlbums,
+  fetchAlbum,
   fetchTracks,
   fetchDashboardStats,
   fetchTopArtists,
   PaginationParams,
   playlistApi,
   userApi,
+  syncAlbumTracks,
+  search,
 } from "./api";
 
 export function useArtists() {
@@ -40,10 +43,7 @@ export function useAlbums() {
 export function useAlbum(albumId: string) {
   return useQuery({
     queryKey: ["album", albumId],
-    queryFn: async () => {
-      const albums = await fetchAlbums();
-      return albums.find((a) => a._id === albumId);
-    },
+    queryFn: () => fetchAlbum(albumId),
     enabled: !!albumId,
   });
 }
@@ -91,6 +91,9 @@ export function useAddToLibrary() {
       userApi.addToLibrary(userId, data),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["user", variables.userId] });
+      queryClient.invalidateQueries({ queryKey: ["user-liked-tracks", variables.userId] });
+      queryClient.invalidateQueries({ queryKey: ["user-liked-albums", variables.userId] });
+      queryClient.invalidateQueries({ queryKey: ["user-favorite-artists", variables.userId] });
     },
   });
 }
@@ -102,6 +105,9 @@ export function useRemoveFromLibrary() {
       userApi.removeFromLibrary(userId, data),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["user", variables.userId] });
+      queryClient.invalidateQueries({ queryKey: ["user-liked-tracks", variables.userId] });
+      queryClient.invalidateQueries({ queryKey: ["user-liked-albums", variables.userId] });
+      queryClient.invalidateQueries({ queryKey: ["user-favorite-artists", variables.userId] });
     },
   });
 }
@@ -156,5 +162,26 @@ export function useUserPlaylists(userId: string, params?: PaginationParams) {
     queryKey: ["user-playlists", userId, params?.page, params?.limit],
     queryFn: () => playlistApi.getByUser(userId, params),
     enabled: !!userId,
+  });
+}
+
+export function useSyncAlbumTracks() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (albumId: string) => {
+      console.log('useSyncAlbumTracks: Calling API for album', albumId);
+      return syncAlbumTracks(albumId);
+    },
+    onSuccess: async (data, albumId) => {
+      console.log('useSyncAlbumTracks: Success!', data);
+      console.log('useSyncAlbumTracks: Invalidating queries...');
+      // Invalider les queries de cet album spécifique
+      await queryClient.invalidateQueries({ queryKey: ["album", albumId] });
+      await queryClient.invalidateQueries({ queryKey: ["album-tracks", albumId] });
+      console.log('useSyncAlbumTracks: All done!');
+    },
+    onError: (error) => {
+      console.error('useSyncAlbumTracks: Error!', error);
+    },
   });
 }

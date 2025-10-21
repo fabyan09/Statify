@@ -11,11 +11,13 @@ import {
   RemoveCollaboratorDto,
 } from './dto/manage-playlist.dto';
 import { PaginationDto, PaginatedResult } from '../common/dto/pagination.dto';
+import { TracksService } from '../tracks/tracks.service';
 
 @Injectable()
 export class PlaylistsService {
   constructor(
     @InjectModel(Playlist.name) private playlistModel: Model<PlaylistDocument>,
+    private tracksService: TracksService,
   ) {}
 
   async create(createPlaylistDto: CreatePlaylistDto): Promise<Playlist> {
@@ -232,5 +234,14 @@ export class PlaylistsService {
       playlist.owner_id === userId ||
       playlist.collaborators.includes(userId)
     );
+  }
+
+  // Get playlist tracks with full track data
+  async getPlaylistTracks(playlistId: string) {
+    const playlist = await this.findOne(playlistId);
+    if (playlist.tracks.length === 0) {
+      return [];
+    }
+    return this.tracksService.findByIds(playlist.tracks);
   }
 }

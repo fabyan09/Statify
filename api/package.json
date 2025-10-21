@@ -27,6 +27,7 @@
     "@nestjs/mapped-types": "*",
     "@nestjs/mongoose": "^11.0.3",
     "@nestjs/platform-express": "^11.0.1",
+    "@spotify/web-api-ts-sdk": "^1.2.0",
     "cache-manager": "^7.2.4",
     "mongoose": "^8.19.1",
     "reflect-metadata": "^0.2.2",

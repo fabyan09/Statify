@@ -70,6 +70,12 @@ export class Album {
 
   @Prop({ type: [String], default: [] })
   genres: string[];
+
+  @Prop({ type: Boolean, default: false })
+  spotify_synced: boolean;
 }
 
 export const AlbumSchema = SchemaFactory.createForClass(Album);
+
+// Text index pour la recherche full-text
+AlbumSchema.index({ name: 'text' });

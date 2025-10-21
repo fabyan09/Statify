@@ -270,7 +270,7 @@ export default function ArtistDetailPage() {
 
       {/* Tabs: Popular Tracks and Releases */}
       <Tabs defaultValue="tracks">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-2 !bg-background/10">
           <TabsTrigger value="tracks">Popular Tracks</TabsTrigger>
           <TabsTrigger value="releases">Releases</TabsTrigger>
         </TabsList>

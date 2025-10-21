@@ -195,7 +195,7 @@ export default function ReleaseCohortsPage() {
 
       {/* Timeline Charts */}
       <Tabs defaultValue="yearly" className="space-y-4">
-        <TabsList>
+        <TabsList className="!bg-background/10">
           <TabsTrigger value="yearly">Yearly View</TabsTrigger>
           <TabsTrigger value="monthly">Monthly View (Last 3 Years)</TabsTrigger>
         </TabsList>

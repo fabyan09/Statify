@@ -31,3 +31,6 @@ export class Playlist {
 }
 
 export const PlaylistSchema = SchemaFactory.createForClass(Playlist);
+
+// Text index pour la recherche full-text (nom + description)
+PlaylistSchema.index({ name: 'text', description: 'text' });

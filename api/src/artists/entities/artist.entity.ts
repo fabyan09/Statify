@@ -55,3 +55,6 @@ export class Artist {
 }
 
 export const ArtistSchema = SchemaFactory.createForClass(Artist);
+
+// Text index pour la recherche full-text (nom + genres)
+ArtistSchema.index({ name: 'text', genres: 'text' });

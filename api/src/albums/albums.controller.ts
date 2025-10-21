@@ -17,6 +17,11 @@ export class AlbumsController {
     return this.albumsService.findAll();
   }
 
+  @Post('by-ids')
+  findByIds(@Body('ids') ids: string[]) {
+    return this.albumsService.findByIds(ids);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.albumsService.findOne(id);
@@ -30,5 +35,15 @@ export class AlbumsController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.albumsService.remove(id);
+  }
+
+  @Post(':id/sync-tracks')
+  syncTracks(@Param('id') id: string) {
+    return this.albumsService.syncTracksFromSpotify(id);
+  }
+
+  @Get(':id/tracks')
+  getAlbumTracks(@Param('id') id: string) {
+    return this.albumsService.getAlbumTracks(id);
   }
 }
