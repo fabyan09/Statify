@@ -1,4 +1,4 @@
-import { Artist, Album, Track } from "./types";
+import { Artist, Album, Track, SearchTrack, SearchAlbum, SearchArtist, SearchPlaylist, SearchUser } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
@@ -125,11 +125,39 @@ export async function fetchTopArtists(limit = 10): Promise<TopArtist[]> {
 }
 
 // Search API
+type SearchResultType = SearchTrack | SearchAlbum | SearchArtist | SearchPlaylist | SearchUser;
+
+// Function overloads for type-safe search
+export async function search(
+  query: string,
+  type: 'tracks',
+  params?: PaginationParams
+): Promise<PaginatedResult<SearchTrack>>;
+export async function search(
+  query: string,
+  type: 'albums',
+  params?: PaginationParams
+): Promise<PaginatedResult<SearchAlbum>>;
+export async function search(
+  query: string,
+  type: 'artists',
+  params?: PaginationParams
+): Promise<PaginatedResult<SearchArtist>>;
+export async function search(
+  query: string,
+  type: 'playlists',
+  params?: PaginationParams
+): Promise<PaginatedResult<SearchPlaylist>>;
+export async function search(
+  query: string,
+  type: 'users',
+  params?: PaginationParams
+): Promise<PaginatedResult<SearchUser>>;
 export async function search(
   query: string,
   type: 'tracks' | 'albums' | 'artists' | 'playlists' | 'users',
   params?: PaginationParams
-): Promise<PaginatedResult<any>> {
+): Promise<PaginatedResult<SearchResultType>> {
   const searchParams = new URLSearchParams();
   searchParams.set('q', query);
   searchParams.set('type', type);

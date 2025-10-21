@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, UseQueryResult } from "@tanstack/react-query";
 import {
   fetchArtists,
   fetchAlbums,
@@ -13,7 +13,9 @@ import {
   userApi,
   syncAlbumTracks,
   search,
+  PaginatedResult,
 } from "./api";
+import { SearchTrack, SearchAlbum, SearchArtist, SearchPlaylist, SearchUser } from "./types";
 
 export function useArtists() {
   return useQuery({
@@ -186,14 +188,42 @@ export function useSyncAlbumTracks() {
   });
 }
 
+// Function overloads for type-safe search hook
+export function useSearch(
+  query: string,
+  type: 'tracks',
+  params?: PaginationParams
+): UseQueryResult<PaginatedResult<SearchTrack>>;
+export function useSearch(
+  query: string,
+  type: 'albums',
+  params?: PaginationParams
+): UseQueryResult<PaginatedResult<SearchAlbum>>;
+export function useSearch(
+  query: string,
+  type: 'artists',
+  params?: PaginationParams
+): UseQueryResult<PaginatedResult<SearchArtist>>;
+export function useSearch(
+  query: string,
+  type: 'playlists',
+  params?: PaginationParams
+): UseQueryResult<PaginatedResult<SearchPlaylist>>;
+export function useSearch(
+  query: string,
+  type: 'users',
+  params?: PaginationParams
+): UseQueryResult<PaginatedResult<SearchUser>>;
 export function useSearch(
   query: string,
   type: 'tracks' | 'albums' | 'artists' | 'playlists' | 'users',
   params?: PaginationParams
-) {
+): UseQueryResult<PaginatedResult<SearchTrack | SearchAlbum | SearchArtist | SearchPlaylist | SearchUser>> {
   return useQuery({
     queryKey: ["search", query, type, params?.page, params?.limit],
-    queryFn: () => search(query, type, params),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    queryFn: () => search(query, type as any, params),
     enabled: !!query && query.trim().length > 0,
-  });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  }) as any;
 }

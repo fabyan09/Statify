@@ -58,3 +58,39 @@ export interface Track {
   playlist_id: string;
   playlist_name: string;
 }
+
+// Extended types for search results with enriched data
+export interface SearchTrack extends Track {
+  albumImage?: string;
+  albumName?: string;
+  artistNames?: string;
+}
+
+export interface SearchAlbum extends Album {
+  artistNames?: string;
+}
+
+// SearchArtist is the same as Artist
+export type SearchArtist = Artist;
+
+export interface SearchPlaylist {
+  _id: string;
+  name: string;
+  description: string;
+  tracks: string[];
+  owner_id: string;
+  collaborators: string[];
+  isPublic: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface SearchUser {
+  _id: string;
+  username: string;
+  liked_tracks?: string[];
+  liked_albums?: string[];
+  favorite_artists?: string[];
+  createdAt?: string;
+  updatedAt?: string;
+}

@@ -147,7 +147,7 @@ export default function LibraryPage() {
               ) : (
                 <div className="space-y-2">
                   {likedTracks.map((track) => {
-                    const album = allAlbums.find(a => a._id === track.album_id);
+                    const album = likedAlbums.find(a => a._id === track.album_id);
                     return (
                       <div
                         key={track._id}
@@ -214,7 +214,7 @@ export default function LibraryPage() {
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                   {likedAlbums.map((album) => {
                     const albumArtists = album.artist_ids
-                      .map(id => allArtists.find(a => a._id === id))
+                      .map(id => favoriteArtists.find(a => a._id === id))
                       .filter((a): a is NonNullable<typeof a> => a !== undefined);
 
                     return (

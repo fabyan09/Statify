@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { SearchTrack, SearchAlbum, SearchArtist, SearchPlaylist, SearchUser } from "@/lib/types";
 import {
   useSearch,
   useUser,
@@ -243,14 +244,14 @@ export default function SearchPage() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {tracks.map((track: any) => (
+                        {tracks.map((track: SearchTrack) => (
                           <TableRow key={track._id}>
                             <TableCell>
                               <div className="relative h-10 w-10 rounded overflow-hidden bg-muted">
                                 {track.albumImage ? (
                                   <Image
                                     src={track.albumImage}
-                                    alt={track.albumName}
+                                    alt={track.albumName || track.name}
                                     fill
                                     className="object-cover"
                                   />
@@ -367,7 +368,7 @@ export default function SearchPage() {
                     </div>
                   ) : (
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                    {albums.map((album: any) => (
+                    {albums.map((album: SearchAlbum) => (
                       <Card key={album._id} className="overflow-hidden hover:shadow-lg transition-shadow !bg-background/10">
                         <Link href={`/albums/${album._id}`}>
                           <div className="relative aspect-square bg-muted cursor-pointer">
@@ -469,7 +470,7 @@ export default function SearchPage() {
                     </div>
                   ) : (
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                    {artists.map((artist: any) => (
+                    {artists.map((artist: SearchArtist) => (
                       <Card key={artist._id} className="overflow-hidden hover:shadow-lg transition-shadow !bg-background/10">
                         <Link href={`/artists/${artist._id}`}>
                           <div className="relative aspect-square bg-muted cursor-pointer">
@@ -575,7 +576,7 @@ export default function SearchPage() {
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {playlists.map((playlist: any) => {
+                    {playlists.map((playlist: SearchPlaylist) => {
                       const isCollaborator = currentUser ? playlist.collaborators.includes(currentUser._id) : false;
 
                       return (
@@ -674,7 +675,7 @@ export default function SearchPage() {
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {users.map((u: any) => (
+                    {users.map((u: SearchUser) => (
                       <Card key={u._id} className="hover:shadow-lg transition-shadow !bg-background/10">
                         <Link href={`/users/${u._id}`}>
                           <CardContent className="p-6 cursor-pointer">
