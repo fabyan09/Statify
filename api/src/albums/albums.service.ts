@@ -73,6 +73,15 @@ export class AlbumsService {
     return result;
   }
 
+  async upsert(id: string, albumData: any) {
+    const result = await this.albumModel
+      .findByIdAndUpdate(id, albumData, { upsert: true, new: true })
+      .exec();
+    // Invalidate cache
+    await this.invalidateAlbumsCache();
+    return result;
+  }
+
   private async invalidateAlbumsCache() {
     // Simply delete the main albums cache key
     await this.cacheManager.del('all-albums');

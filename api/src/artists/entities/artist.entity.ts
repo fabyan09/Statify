@@ -52,6 +52,12 @@ export class Artist {
     height: number;
     width: number;
   }[];
+
+  @Prop({ type: [String], default: [] })
+  album_ids: string[];
+
+  @Prop({ type: Boolean, default: false })
+  spotify_synced: boolean;
 }
 
 export const ArtistSchema = SchemaFactory.createForClass(Artist);

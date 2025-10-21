@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -18,9 +18,10 @@ import {
   useAddToLibrary,
   useRemoveFromLibrary,
   useAddTracksToPlaylist,
+  useSyncArtistAlbums,
 } from "@/lib/hooks";
 import { useAuth } from "@/contexts/auth-context";
-import { ExternalLink, Heart, Plus, ArrowLeft, Users, Music, Disc } from "lucide-react";
+import { ExternalLink, Heart, Plus, ArrowLeft, Users, Music, Disc, RefreshCw } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -43,12 +44,31 @@ export default function ArtistDetailPage() {
   const addToLibrary = useAddToLibrary();
   const removeFromLibrary = useRemoveFromLibrary();
   const addTracksToPlaylist = useAddTracksToPlaylist();
+  const syncArtistAlbums = useSyncArtistAlbums();
 
   const [playlistDialogOpen, setPlaylistDialogOpen] = useState(false);
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<string>("");
   const [selectedTrackId, setSelectedTrackId] = useState<string>("");
+  const [hasTriggeredSync, setHasTriggeredSync] = useState(false);
 
   const albumMap = albums ? new Map(albums.map((album) => [album._id, album])) : new Map();
+
+  // Auto-sync albums and tracks from Spotify if not already synced
+  useEffect(() => {
+    // Conditions très strictes pour éviter les appels multiples
+    if (
+      artist &&
+      artist.spotify_synced === false &&
+      !hasTriggeredSync &&
+      !syncArtistAlbums.isPending &&
+      !syncArtistAlbums.isSuccess
+    ) {
+      console.log('[FRONTEND] Triggering sync for artist:', artistId, 'spotify_synced:', artist.spotify_synced);
+      setHasTriggeredSync(true); // Marquer AVANT l'appel
+      syncArtistAlbums.mutate(artistId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [artist?.spotify_synced, artistId, hasTriggeredSync]);
 
   // Filter albums and tracks for this artist
   const artistAlbums = (albums || [])
@@ -252,12 +272,24 @@ export default function ArtistDetailPage() {
           <CardContent className="p-6 text-center">
             <div className="text-3xl font-bold">{artistAlbums.length}</div>
             <div className="text-sm text-muted-foreground">Releases</div>
+            {syncArtistAlbums.isPending && (
+              <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground mt-2">
+                <RefreshCw className="h-3 w-3 animate-spin" />
+                Syncing...
+              </div>
+            )}
           </CardContent>
         </Card>
         <Card className="!bg-background/10">
           <CardContent className="p-6 text-center">
             <div className="text-3xl font-bold">{artistTracks.length}</div>
             <div className="text-sm text-muted-foreground">Tracks</div>
+            {syncArtistAlbums.isPending && (
+              <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground mt-2">
+                <RefreshCw className="h-3 w-3 animate-spin" />
+                Syncing...
+              </div>
+            )}
           </CardContent>
         </Card>
         <Card className="!bg-background/10">

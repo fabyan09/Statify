@@ -12,6 +12,7 @@ import {
   playlistApi,
   userApi,
   syncAlbumTracks,
+  syncArtistAlbums,
   search,
   PaginatedResult,
   fetchRecommendations,
@@ -185,6 +186,38 @@ export function useSyncAlbumTracks() {
     },
     onError: (error) => {
       console.error('useSyncAlbumTracks: Error!', error);
+    },
+  });
+}
+
+export function useSyncArtistAlbums() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (artistId: string) => {
+      console.log('useSyncArtistAlbums: Calling API for artist', artistId);
+      try {
+        const result = await syncArtistAlbums(artistId);
+        console.log('useSyncArtistAlbums: API response:', result);
+        return result;
+      } catch (error: any) {
+        console.error('useSyncArtistAlbums: API error:', error.message);
+        throw error;
+      }
+    },
+    onSuccess: async (data, artistId) => {
+      console.log('useSyncArtistAlbums: Success!', data);
+      console.log('useSyncArtistAlbums: Synced', data.syncedAlbums, 'albums and', data.syncedTracks, 'tracks');
+      console.log('useSyncArtistAlbums: Invalidating queries...');
+      // Invalider les queries liées à cet artiste
+      await queryClient.invalidateQueries({ queryKey: ["artist", artistId] });
+      await queryClient.invalidateQueries({ queryKey: ["artists"] });
+      await queryClient.invalidateQueries({ queryKey: ["albums"] });
+      await queryClient.invalidateQueries({ queryKey: ["tracks"] });
+      console.log('useSyncArtistAlbums: All done!');
+    },
+    onError: (error: any) => {
+      console.error('useSyncArtistAlbums: Error!', error);
+      console.error('useSyncArtistAlbums: Error details:', error.message);
     },
   });
 }

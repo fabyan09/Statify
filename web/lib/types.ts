@@ -18,6 +18,8 @@ export interface Artist {
   uri: string;
   external_urls: ExternalUrls;
   images: Image[];
+  album_ids?: string[];
+  spotify_synced?: boolean;
 }
 
 export interface Album {

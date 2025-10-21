@@ -45,6 +45,11 @@ export class ArtistsController {
     return this.tracksService.findByArtist(id);
   }
 
+  @Post(':id/sync-albums')
+  syncAlbums(@Param('id') id: string) {
+    return this.artistsService.syncAlbumsFromSpotify(id);
+  }
+
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateArtistDto: UpdateArtistDto) {
     return this.artistsService.update(id, updateArtistDto);

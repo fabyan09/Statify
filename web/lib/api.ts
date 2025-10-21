@@ -65,6 +65,14 @@ export async function syncAlbumTracks(albumId: string): Promise<{ message: strin
   return response.json();
 }
 
+export async function syncArtistAlbums(artistId: string): Promise<{ message: string; artist: Artist; syncedAlbums: number; syncedTracks: number }> {
+  const response = await fetch(`${API_BASE_URL}/artists/${artistId}/sync-albums`, {
+    method: 'POST',
+  });
+  if (!response.ok) throw new Error("Failed to sync artist albums");
+  return response.json();
+}
+
 export async function fetchAlbumTracks(albumId: string): Promise<Track[]> {
   const response = await fetch(`${API_BASE_URL}/albums/${albumId}/tracks`, {
     cache: 'no-store',

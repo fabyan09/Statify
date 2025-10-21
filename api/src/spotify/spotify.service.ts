@@ -58,4 +58,67 @@ export class SpotifyService {
       throw new Error(`Failed to fetch tracks from Spotify: ${error.message}`);
     }
   }
+
+  /**
+   * Récupère tous les albums d'un artiste depuis l'API Spotify
+   * @param artistId L'ID Spotify de l'artiste
+   * @returns Les albums de l'artiste (albums, singles, compilations)
+   */
+  async getArtistAlbums(artistId: string) {
+    try {
+      const allAlbums: any[] = [];
+      let offset = 0;
+      const limit = 50; // Maximum autorisé par l'API
+      let hasMore = true;
+
+      while (hasMore) {
+        const response = await this.spotifyApi.artists.albums(
+          artistId,
+          'album,single,compilation', // Include all types
+          undefined, // market
+          limit,
+          offset,
+        );
+
+        allAlbums.push(...response.items);
+
+        // Check if there are more items to fetch
+        if (response.items.length < limit || allAlbums.length >= response.total) {
+          hasMore = false;
+        } else {
+          offset += limit;
+        }
+      }
+
+      return allAlbums;
+    } catch (error) {
+      throw new Error(`Failed to fetch artist albums from Spotify: ${error.message}`);
+    }
+  }
+
+  /**
+   * Récupère les informations complètes de plusieurs albums depuis l'API Spotify
+   * L'API Spotify permet de récupérer jusqu'à 20 albums à la fois
+   * @param albumIds Les IDs Spotify des albums
+   * @returns Les informations complètes des albums
+   */
+  async getAlbums(albumIds: string[]) {
+    try {
+      // Split into chunks of 20 (API limit)
+      const chunks: string[][] = [];
+      for (let i = 0; i < albumIds.length; i += 20) {
+        chunks.push(albumIds.slice(i, i + 20));
+      }
+
+      const allAlbums: any[] = [];
+      for (const chunk of chunks) {
+        const albums = await this.spotifyApi.albums.get(chunk);
+        allAlbums.push(...albums);
+      }
+
+      return allAlbums;
+    } catch (error) {
+      throw new Error(`Failed to fetch albums from Spotify: ${error.message}`);
+    }
+  }
 }
