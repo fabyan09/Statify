@@ -534,7 +534,7 @@ export default function DiscoverPage() {
                   {section.items.map((item) => {
                     const artist = item as Artist;
                     return (
-                      <Card key={artist._id} className="!bg-background/10 overflow-hidden hover:border-purple-500 hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
+                      <Card key={artist._id} className="!bg-background/10 overflow-hidden hover:border-green-500 hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
                         <CardContent className="p-4">
                           <div className="relative w-full aspect-square rounded-full overflow-hidden mb-3">
                             {artist.images?.[0]?.url ? (
@@ -551,7 +551,7 @@ export default function DiscoverPage() {
                             )}
                           </div>
                           <Link href={`/artists/${artist._id}`}>
-                            <h3 className="font-semibold mb-1 hover:text-purple-500 transition-colors line-clamp-1">
+                            <h3 className="font-semibold mb-1 hover:text-green-500 transition-colors line-clamp-1">
                               {artist.name}
                             </h3>
                           </Link>
@@ -596,7 +596,7 @@ export default function DiscoverPage() {
                       .filter((artist): artist is Artist => artist !== undefined);
 
                     return (
-                      <Card key={album._id} className="!bg-background/10 overflow-hidden hover:border-purple-500 hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
+                      <Card key={album._id} className="!bg-background/10 overflow-hidden hover:border-green-500 hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
                         <CardContent className="p-4">
                           <div className="relative w-full aspect-square rounded-lg overflow-hidden mb-3">
                             {album.images?.[0]?.url ? (
@@ -613,7 +613,7 @@ export default function DiscoverPage() {
                             )}
                           </div>
                           <Link href={`/albums/${album._id}`}>
-                            <h3 className="font-semibold mb-1 hover:text-purple-500 transition-colors line-clamp-1">
+                            <h3 className="font-semibold mb-1 hover:text-green-500 transition-colors line-clamp-1">
                               {album.name}
                             </h3>
                           </Link>
@@ -663,7 +663,7 @@ export default function DiscoverPage() {
                       .filter((artist): artist is Artist => artist !== undefined);
 
                     return (
-                      <Card key={track._id} className="!bg-background/10 hover:border-purple-500 hover:shadow-md transition-all duration-300">
+                      <Card key={track._id} className="!bg-background/10 hover:border-green-500 hover:shadow-md transition-all duration-300">
                         <CardContent className="p-4">
                           <div className="flex items-center gap-4">
                             {/* Album Art */}

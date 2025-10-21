@@ -10,6 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Heart, Music, Disc, User, Trash2 } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
 
 export default function LibraryPage() {
   const router = useRouter();
@@ -144,31 +146,51 @@ export default function LibraryPage() {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {likedTracks.map((track) => (
-                    <div
-                      key={track._id}
-                      className="flex items-center justify-between p-3 rounded-lg hover:bg-accent transition-colors"
-                    >
-                      <div className="flex-1">
-                        <div className="font-medium">{track.name}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {Math.floor(track.duration_ms / 60000)}:{String(Math.floor((track.duration_ms % 60000) / 1000)).padStart(2, '0')}
+                  {likedTracks.map((track) => {
+                    const album = allAlbums.find(a => a._id === track.album_id);
+                    return (
+                      <div
+                        key={track._id}
+                        className="flex items-center gap-4 p-3 rounded-lg hover:bg-accent transition-colors"
+                      >
+                        {/* Album Cover */}
+                        <div className="relative w-12 h-12 rounded overflow-hidden flex-shrink-0">
+                          {album?.images?.[0]?.url ? (
+                            <Image
+                              src={album.images[0].url}
+                              alt={album.name}
+                              fill
+                              className="object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                              <Music className="w-6 h-6 text-white" />
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium line-clamp-1">{track.name}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {Math.floor(track.duration_ms / 60000)}:{String(Math.floor((track.duration_ms % 60000) / 1000)).padStart(2, '0')}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <Badge variant="secondary">
+                            {track.popularity}
+                          </Badge>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => removeMutation.mutate({ track_id: track._id })}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="secondary">
-                          {track.popularity}% popularity
-                        </Badge>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => removeMutation.mutate({ track_id: track._id })}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </CardContent>
@@ -189,30 +211,61 @@ export default function LibraryPage() {
                   No liked albums yet. Start exploring!
                 </div>
               ) : (
-                <div className="space-y-2">
-                  {likedAlbums.map((album) => (
-                    <div
-                      key={album._id}
-                      className="flex items-center justify-between p-3 rounded-lg hover:bg-accent transition-colors"
-                    >
-                      <div className="flex-1">
-                        <div className="font-medium">{album.name}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {album.total_tracks} tracks • {album.release_date}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="secondary">{album.album_type}</Badge>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => removeMutation.mutate({ album_id: album._id })}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                  {likedAlbums.map((album) => {
+                    const albumArtists = album.artist_ids
+                      .map(id => allArtists.find(a => a._id === id))
+                      .filter((a): a is NonNullable<typeof a> => a !== undefined);
+
+                    return (
+                      <Card key={album._id} className="!bg-background/10 overflow-hidden hover:border-green-500 hover:shadow-lg transition-all duration-300 group">
+                        <CardContent className="p-4">
+                          <Link href={`/albums/${album._id}`}>
+                            <div className="relative w-full aspect-square rounded-lg overflow-hidden mb-3">
+                              {album.images?.[0]?.url ? (
+                                <Image
+                                  src={album.images[0].url}
+                                  alt={album.name}
+                                  fill
+                                  className="object-cover group-hover:scale-105 transition-transform duration-300"
+                                />
+                              ) : (
+                                <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center">
+                                  <Disc className="w-12 h-12 text-white" />
+                                </div>
+                              )}
+                            </div>
+                          </Link>
+
+                          <Link href={`/albums/${album._id}`}>
+                            <h3 className="font-semibold mb-1 hover:text-green-500 transition-colors line-clamp-1">
+                              {album.name}
+                            </h3>
+                          </Link>
+
+                          <p className="text-sm text-muted-foreground mb-2 line-clamp-1">
+                            {albumArtists.map(a => a.name).join(", ")}
+                          </p>
+
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex gap-1">
+                              <Badge variant="secondary" className="text-xs">
+                                {album.album_type}
+                              </Badge>
+                            </div>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8"
+                              onClick={() => removeMutation.mutate({ album_id: album._id })}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
               )}
             </CardContent>
@@ -233,31 +286,52 @@ export default function LibraryPage() {
                   No favorite artists yet. Start exploring!
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                   {favoriteArtists.map((artist) => (
-                    <div
-                      key={artist._id}
-                      className="flex items-center justify-between p-3 rounded-lg hover:bg-accent transition-colors"
-                    >
-                      <div className="flex-1">
-                        <div className="font-medium">{artist.name}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {artist.genres.slice(0, 3).join(", ")}
+                    <Card key={artist._id} className="!bg-background/10 overflow-hidden hover:border-green-500 hover:shadow-lg transition-all duration-300 group">
+                      <CardContent className="p-4">
+                        <Link href={`/artists/${artist._id}`}>
+                          <div className="relative w-full aspect-square rounded-full overflow-hidden mb-3">
+                            {artist.images?.[0]?.url ? (
+                              <Image
+                                src={artist.images[0].url}
+                                alt={artist.name}
+                                fill
+                                className="object-cover group-hover:scale-105 transition-transform duration-300"
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                                <User className="w-12 h-12 text-white" />
+                              </div>
+                            )}
+                          </div>
+                        </Link>
+
+                        <Link href={`/artists/${artist._id}`}>
+                          <h3 className="font-semibold mb-1 hover:text-green-500 transition-colors text-center line-clamp-1">
+                            {artist.name}
+                          </h3>
+                        </Link>
+
+                        <p className="text-xs text-muted-foreground mb-2 text-center line-clamp-1">
+                          {artist.genres.slice(0, 2).join(", ")}
+                        </p>
+
+                        <div className="flex items-center justify-between gap-2">
+                          <Badge variant="secondary" className="text-xs flex-1 justify-center">
+                            {artist.popularity}
+                          </Badge>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-8 w-8"
+                            onClick={() => removeMutation.mutate({ artist_id: artist._id })}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="secondary">
-                          {artist.popularity}% popularity
-                        </Badge>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => removeMutation.mutate({ artist_id: artist._id })}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
+                      </CardContent>
+                    </Card>
                   ))}
                 </div>
               )}
