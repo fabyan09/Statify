@@ -3,10 +3,10 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAlbums } from "@/lib/hooks";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { Badge } from "@/components/ui/badge";
 import { ReleasesByYearChart } from "./ReleasesByYearChart";
 import { ReleasesByMonthChart } from "./ReleasesByMonthChart";
+import { AvgPopularityByYearChart } from "./AvgPopularityByYearChart";
 
 interface CohortData {
   period: string;
@@ -203,31 +203,7 @@ export default function ReleaseCohortsPage() {
         <TabsContent value="yearly" className="space-y-4">
           <div className="grid gap-6">
             <ReleasesByYearChart data={yearlyData} />
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Average Popularity by Year</CardTitle>
-                <CardDescription>How popularity trends over time</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={350}>
-                  <LineChart data={yearlyData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="period" />
-                    <YAxis domain={[0, 100]} />
-                    <Tooltip />
-                    <Legend />
-                    <Line
-                      type="monotone"
-                      dataKey="avgPopularity"
-                      stroke="#2563eb"
-                      strokeWidth={2}
-                      name="Avg Popularity"
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
+            <AvgPopularityByYearChart data={yearlyData} />
           </div>
         </TabsContent>
 
