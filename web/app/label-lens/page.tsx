@@ -195,7 +195,7 @@ export default function LabelLensPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {(tracks.length / labelStats.length).toFixed(1)}
+              {(labelStats.reduce((acc, stat) => acc + stat.trackCount, 0) / labelStats.length).toFixed(1)}
             </div>
           </CardContent>
         </Card>
@@ -228,7 +228,7 @@ export default function LabelLensPage() {
                 />
                 <ChartTooltip
                   cursor={false}
-                  content={<ChartTooltipContent hideLabel />}
+                  content={<ChartTooltipContent />}
                 />
                 <Bar dataKey="avgPopularity" fill="var(--color-avgPopularity)" radius={8} />
               </BarChart>
@@ -293,7 +293,7 @@ export default function LabelLensPage() {
                 className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
               >
                 <div className="flex items-center gap-4 flex-1">
-                  <div className="text-2xl font-bold text-muted-foreground w-8">
+                  <div className="text-2xl font-bold text-muted-foreground w-16 text-center">
                     #{index + 1}
                   </div>
                   <div className="flex-1">
