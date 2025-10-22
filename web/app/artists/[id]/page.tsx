@@ -32,6 +32,8 @@ export default function ArtistDetailPage() {
   const { data: artist, isLoading: artistLoading } = useArtist(artistId);
   const { data: albums, isLoading: albumsLoading } = useArtistAlbums(artistId);
   const { data: tracks, isLoading: tracksLoading } = useArtistTracks(artistId);
+  // Charger toutes les playlists (pour le dropdown d'ajout de tracks)
+  // Acceptable pour la plupart des utilisateurs (<100 playlists)
   const { data: playlistsResult } = usePlaylists({ limit: 1000 });
 
   const playlists = playlistsResult?.data || [];

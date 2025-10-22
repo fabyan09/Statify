@@ -79,8 +79,10 @@ export class SearchService {
       toYear?: number;
     },
   ): Promise<PaginatedResult<SearchTrackDto>> {
-    // Build the filter object
-    const filter: any = { $text: { $search: query } };
+    // Build the filter object with case-insensitive regex
+    const filter: any = {
+      name: { $regex: query, $options: 'i' } // Case-insensitive partial match
+    };
 
     // Add popularity filter
     if (filters?.minPopularity !== undefined || filters?.maxPopularity !== undefined) {
@@ -93,11 +95,11 @@ export class SearchService {
       }
     }
 
-    // Utilise MongoDB text search avec score de pertinence
+    // Use regex search with case-insensitive option
     const [tracks, total] = await Promise.all([
       this.trackModel
-        .find(filter, { score: { $meta: 'textScore' } })
-        .sort({ score: { $meta: 'textScore' } })
+        .find(filter)
+        .sort({ popularity: -1 }) // Sort by popularity instead of text score
         .skip(skip)
         .limit(limit)
         .populate('album_id', 'name images release_date')
@@ -159,8 +161,10 @@ export class SearchService {
       toYear?: number;
     },
   ): Promise<PaginatedResult<SearchAlbumDto>> {
-    // Build the filter object
-    const filter: any = { $text: { $search: query } };
+    // Build the filter object with case-insensitive regex
+    const filter: any = {
+      name: { $regex: query, $options: 'i' } // Case-insensitive partial match
+    };
 
     // Add popularity filter
     if (filters?.minPopularity !== undefined || filters?.maxPopularity !== undefined) {
@@ -203,8 +207,8 @@ export class SearchService {
 
     const [albums, total] = await Promise.all([
       this.albumModel
-        .find(filter, { score: { $meta: 'textScore' } })
-        .sort({ score: { $meta: 'textScore' } })
+        .find(filter)
+        .sort({ popularity: -1 }) // Sort by popularity instead of text score
         .skip(skip)
         .limit(limit)
         .populate('artist_ids', 'name')
@@ -259,8 +263,10 @@ export class SearchService {
       toYear?: number;
     },
   ): Promise<PaginatedResult<Artist>> {
-    // Build the filter object
-    const filter: any = { $text: { $search: query } };
+    // Build the filter object with case-insensitive regex
+    const filter: any = {
+      name: { $regex: query, $options: 'i' } // Case-insensitive partial match
+    };
 
     // Add popularity filter
     if (filters?.minPopularity !== undefined || filters?.maxPopularity !== undefined) {
@@ -280,8 +286,8 @@ export class SearchService {
 
     const [data, total] = await Promise.all([
       this.artistModel
-        .find(filter, { score: { $meta: 'textScore' } })
-        .sort({ score: { $meta: 'textScore' } })
+        .find(filter)
+        .sort({ popularity: -1 }) // Sort by popularity instead of text score
         .skip(skip)
         .limit(limit)
         .exec(),
@@ -309,15 +315,15 @@ export class SearchService {
     limit: number,
     page: number,
   ): Promise<PaginatedResult<Playlist>> {
-    const filter = {
-      $text: { $search: query },
+    const filter: any = {
+      name: { $regex: query, $options: 'i' }, // Case-insensitive partial match
       isPublic: true,
     };
 
     const [data, total] = await Promise.all([
       this.playlistModel
-        .find(filter, { score: { $meta: 'textScore' } })
-        .sort({ score: { $meta: 'textScore' } })
+        .find(filter)
+        .sort({ name: 1 }) // Sort by name alphabetically
         .skip(skip)
         .limit(limit)
         .exec(),
@@ -345,14 +351,18 @@ export class SearchService {
     limit: number,
     page: number,
   ): Promise<PaginatedResult<User>> {
+    const filter = {
+      username: { $regex: query, $options: 'i' } // Case-insensitive partial match
+    };
+
     const [data, total] = await Promise.all([
       this.userModel
-        .find({ $text: { $search: query } }, { score: { $meta: 'textScore' } })
-        .sort({ score: { $meta: 'textScore' } })
+        .find(filter)
+        .sort({ username: 1 }) // Sort by username alphabetically
         .skip(skip)
         .limit(limit)
         .exec(),
-      this.userModel.countDocuments({ $text: { $search: query } }).exec(),
+      this.userModel.countDocuments(filter).exec(),
     ]);
 
     const totalPages = Math.ceil(total / limit);

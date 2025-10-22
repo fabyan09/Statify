@@ -35,6 +35,9 @@ export default function PlaylistsPage() {
   // Fetch user's playlists (no pagination for user's own playlists)
   const { data: userPlaylistsResult, isLoading } = useQuery({
     queryKey: ["playlists", "user", currentUser?._id],
+    // Charger toutes les playlists de l'utilisateur
+    // Acceptable pour la plupart des utilisateurs (<100 playlists)
+    // TODO: Implémenter pagination si nécessaire pour power users
     queryFn: () => playlistApi.getByUser(currentUser!._id, { limit: 1000 }),
     enabled: !!currentUser,
   });

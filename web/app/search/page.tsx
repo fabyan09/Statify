@@ -28,6 +28,7 @@ import { useDebounce } from "@/lib/useDebounce";
 import { SearchFilters } from "@/lib/api";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
+import { AddArtistModal } from "@/components/add-artist-modal";
 
 export default function SearchPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -66,6 +67,8 @@ export default function SearchPage() {
   // Get authenticated user
   const { user: currentUser } = useAuth();
   const { data: user } = useUser(currentUser?._id || "");
+  // Charger toutes les playlists de l'utilisateur (pour le dropdown d'ajout de tracks)
+  // Acceptable pour la plupart des utilisateurs (<100 playlists)
   const { data: userPlaylistsResult } = useUserPlaylists(currentUser?._id || "", { limit: 1000 });
   const userPlaylists = userPlaylistsResult?.data || [];
 
@@ -78,6 +81,7 @@ export default function SearchPage() {
   const [playlistDialogOpen, setPlaylistDialogOpen] = useState(false);
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<string>("");
   const [selectedTrackId, setSelectedTrackId] = useState<string>("");
+  const [addArtistModalOpen, setAddArtistModalOpen] = useState(false);
 
   const isLoading = tracksLoading || albumsLoading || artistsLoading || playlistsLoading || usersLoading;
 
@@ -574,10 +578,23 @@ export default function SearchPage() {
             <>
               <Card className="!bg-background/10">
                 <CardHeader>
-                  <CardTitle>Artists</CardTitle>
-                  <CardDescription>
-                    {artistsResult?.meta.total || 0} artist{artistsResult?.meta.total !== 1 ? "s" : ""} found
-                  </CardDescription>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle>Artists</CardTitle>
+                      <CardDescription>
+                        {artistsResult?.meta.total || 0} artist{artistsResult?.meta.total !== 1 ? "s" : ""} found
+                      </CardDescription>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setAddArtistModalOpen(true)}
+                      className="flex items-center gap-2"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Ajouter depuis Spotify
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   {artistsLoading ? (
@@ -585,9 +602,17 @@ export default function SearchPage() {
                       <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
                     </div>
                   ) : artists.length === 0 ? (
-                    <div className="text-center py-12">
+                    <div className="text-center py-12 space-y-4">
                       <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
                       <p className="text-muted-foreground">No artists found matching your search.</p>
+                      <Button
+                        variant="default"
+                        onClick={() => setAddArtistModalOpen(true)}
+                        className="flex items-center gap-2"
+                      >
+                        <Plus className="h-4 w-4" />
+                        Vous ne trouvez pas votre artiste ? Ajoutez-le depuis Spotify
+                      </Button>
                     </div>
                   ) : (
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
@@ -659,6 +684,25 @@ export default function SearchPage() {
                     onPageChange={(newPage) => setArtistsPage(newPage)}
                   />
                 </div>
+              )}
+
+              {/* Call to action to add artist from Spotify */}
+              {artists.length > 0 && (
+                <Card className="!bg-background/10 border-dashed border-2 mt-4">
+                  <CardContent className="flex flex-col items-center justify-center py-8">
+                    <p className="text-muted-foreground text-center mb-4">
+                      Vous ne trouvez pas votre artiste ?
+                    </p>
+                    <Button
+                      variant="default"
+                      onClick={() => setAddArtistModalOpen(true)}
+                      className="flex items-center gap-2"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Ajoutez-le depuis Spotify
+                    </Button>
+                  </CardContent>
+                </Card>
               )}
             </>
           )}
@@ -881,6 +925,13 @@ export default function SearchPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Add Artist from Spotify Modal */}
+      <AddArtistModal
+        open={addArtistModalOpen}
+        onOpenChange={setAddArtistModalOpen}
+        initialQuery={activeTab === "artists" ? debouncedSearchTerm : ""}
+      />
     </div>
   );
 }

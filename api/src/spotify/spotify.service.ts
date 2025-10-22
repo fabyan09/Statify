@@ -121,4 +121,31 @@ export class SpotifyService {
       throw new Error(`Failed to fetch albums from Spotify: ${error.message}`);
     }
   }
+
+  /**
+   * Recherche des artistes sur Spotify
+   * @param query La requête de recherche
+   * @returns Les artistes correspondants
+   */
+  async searchArtists(query: string) {
+    try {
+      const results = await this.spotifyApi.search(query, ['artist'], undefined, 20);
+      return results.artists.items;
+    } catch (error) {
+      throw new Error(`Failed to search artists on Spotify: ${error.message}`);
+    }
+  }
+
+  /**
+   * Récupère les informations d'un artiste depuis Spotify
+   * @param artistId L'ID Spotify de l'artiste
+   * @returns Les informations de l'artiste
+   */
+  async getArtist(artistId: string) {
+    try {
+      return await this.spotifyApi.artists.get(artistId);
+    } catch (error) {
+      throw new Error(`Failed to fetch artist from Spotify: ${error.message}`);
+    }
+  }
 }

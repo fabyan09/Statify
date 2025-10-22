@@ -4,8 +4,9 @@ import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { playlistApi, fetchTracks } from "@/lib/api";
+import { Album, Artist } from "@/lib/types";
 import { useAuth } from "@/contexts/auth-context";
-import { useAlbums, useArtists, useUser, useAddToLibrary, useRemoveFromLibrary } from "@/lib/hooks";
+import { useUser, useAddToLibrary, useRemoveFromLibrary, usePlaylistTracks } from "@/lib/hooks";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -60,18 +61,32 @@ export default function PlaylistDetailPage() {
     enabled: !!currentUser,
   });
 
-  // Fetch all tracks
+  // Fetch playlist tracks (only the tracks in this playlist)
+  const { data: playlistTracks, isLoading: playlistTracksLoading } = usePlaylistTracks(playlistId);
+
+  // Fetch tracks (for the "add tracks" section)
+  // Limited to 100 to avoid loading too much data
+  // TODO: Implement search-based track selection for better UX
   const { data: tracksResult } = useQuery({
     queryKey: ["tracks"],
-    queryFn: () => fetchTracks({ limit: 1000 }),
-    enabled: !!currentUser,
+    queryFn: () => fetchTracks({ limit: 100 }),
+    enabled: !!currentUser && showAddTracks, // Only load when adding tracks
   });
 
   const allTracks = tracksResult?.data || [];
 
-  // Fetch albums and artists
-  const { data: albums } = useAlbums();
-  const { data: artists } = useArtists();
+  // Fetch albums and artists ONLY when showing the "add tracks" section
+  // The playlist tracks already have populated album_id and artist_ids from the backend
+  const { data: albums } = useQuery({
+    queryKey: ["albums"],
+    queryFn: () => fetch(`${process.env.NEXT_PUBLIC_API_URL}/albums`).then(res => res.json()),
+    enabled: !!currentUser && showAddTracks, // Only load when adding tracks
+  });
+  const { data: artists } = useQuery({
+    queryKey: ["artists"],
+    queryFn: () => fetch(`${process.env.NEXT_PUBLIC_API_URL}/artists`).then(res => res.json()),
+    enabled: !!currentUser && showAddTracks, // Only load when adding tracks
+  });
 
   // Get user data for like functionality
   const { data: user } = useUser(currentUser?._id || "");
@@ -79,9 +94,9 @@ export default function PlaylistDetailPage() {
   const addToLibrary = useAddToLibrary();
   const removeFromLibrary = useRemoveFromLibrary();
 
-  // Create lookups
-  const albumMap = albums ? new Map(albums.map((album) => [album._id, album])) : new Map();
-  const artistMap = artists ? new Map(artists.map((artist) => [artist._id, artist])) : new Map();
+  // Create lookups for the "add tracks" section (these tracks are NOT populated)
+  const albumMap = albums ? new Map(albums.map((album: Album) => [album._id, album])) : new Map();
+  const artistMap = artists ? new Map(artists.map((artist: Artist) => [artist._id, artist])) : new Map();
 
   // Update playlist mutation
   const updateMutation = useMutation({
@@ -98,6 +113,7 @@ export default function PlaylistDetailPage() {
     mutationFn: (track_ids: string[]) => playlistApi.addTracks(playlistId, track_ids),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["playlist", playlistId] });
+      queryClient.invalidateQueries({ queryKey: ["playlist-tracks", playlistId] });
       setShowAddTracks(false);
       setSelectedTracks([]);
     },
@@ -108,6 +124,7 @@ export default function PlaylistDetailPage() {
     mutationFn: (track_ids: string[]) => playlistApi.removeTracks(playlistId, track_ids),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["playlist", playlistId] });
+      queryClient.invalidateQueries({ queryKey: ["playlist-tracks", playlistId] });
     },
   });
 
@@ -151,11 +168,9 @@ export default function PlaylistDetailPage() {
     );
   }
 
-  const playlistTracks = allTracks.filter((track) => playlist.tracks.includes(track._id));
-
   // Filter available tracks by search term
   const availableTracks = allTracks
-    .filter((track) => !playlist.tracks.includes(track._id))
+    .filter((track) => !playlist?.tracks.includes(track._id))
     .filter((track) => {
       if (!searchTerm) return true;
       const album = albumMap.get(track.album_id);
@@ -419,19 +434,32 @@ export default function PlaylistDetailPage() {
             <CardHeader>
               <CardTitle>Playlist Tracks</CardTitle>
               <CardDescription>
-                {playlistTracks.length} track{playlistTracks.length !== 1 ? "s" : ""}
+                {playlistTracks?.length || 0} track{(playlistTracks?.length || 0) !== 1 ? "s" : ""}
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {playlistTracks.length === 0 ? (
+              {playlistTracksLoading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                </div>
+              ) : !playlistTracks || playlistTracks.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   No tracks yet. Add some tracks to get started!
                 </div>
               ) : (
                 <div className="space-y-2">
                   {playlistTracks.map((track, index) => {
-                    const album = albumMap.get(track.album_id);
-                    const trackArtists = track.artist_ids.map((id) => artistMap.get(id)).filter(Boolean);
+                    // Les données sont déjà populées par le backend
+                    const album = typeof track.album_id === 'string'
+                      ? albumMap.get(track.album_id)
+                      : track.album_id;
+
+                    // artist_ids peut être soit un tableau d'IDs soit un tableau d'objets populés
+                    const trackArtists = Array.isArray(track.artist_ids)
+                      ? track.artist_ids.map((artistOrId) =>
+                          typeof artistOrId === 'string' ? artistMap.get(artistOrId) : artistOrId
+                        ).filter(Boolean)
+                      : [];
                     const artistNames = trackArtists.map((artist) => artist?.name).join(", ") || "Unknown Artist";
 
                     return (

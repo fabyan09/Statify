@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { useAlbums, useTracks } from "@/lib/hooks";
+import { useLabelStats } from "@/lib/hooks";
+import { LabelStats } from "@/lib/api";
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Legend } from "recharts";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,26 +15,6 @@ import {
   ChartLegendContent,
   type ChartConfig,
 } from "@/components/ui/chart";
-
-interface LabelStats {
-  label: string;
-  albumCount: number;
-  trackCount: number;
-  avgPopularity: number;
-  singles: number;
-  albums: number;
-  compilations: number;
-}
-
-interface LabelAccumulator {
-  label: string;
-  albumCount: number;
-  trackCount: number;
-  totalPopularity: number;
-  singles: number;
-  albums: number;
-  compilations: number;
-}
 
 const barChartConfig = {
   avgPopularity: {
@@ -58,74 +39,27 @@ const pieChartConfig = {
 } satisfies ChartConfig;
 
 export default function LabelLensPage() {
-  const { data: albums, isLoading: albumsLoading, error: albumsError } = useAlbums();
-  const { data: tracksResult, isLoading: tracksLoading, error: tracksError } = useTracks({ limit: 1000 });
+  const { data: labelStatsData, isLoading, error } = useLabelStats();
 
   const [displayedLabels, setDisplayedLabels] = useState(20);
 
-  const isLoading = albumsLoading || tracksLoading;
-  const error = albumsError || tracksError;
-  const tracks = tracksResult?.data || [];
-
-  // Calculate label stats
-  const labelStats: LabelStats[] = albums ? Object.entries(
-    albums.reduce((acc, album) => {
-      if (!acc[album.label]) {
-        acc[album.label] = {
-          label: album.label,
-          albumCount: 0,
-          trackCount: 0,
-          totalPopularity: 0,
-          singles: 0,
-          albums: 0,
-          compilations: 0,
-        };
-      }
-      acc[album.label].albumCount++;
-      acc[album.label].trackCount += album.track_ids.length;
-      acc[album.label].totalPopularity += album.popularity;
-
-      if (album.album_type === "single") acc[album.label].singles++;
-      else if (album.album_type === "album") acc[album.label].albums++;
-      else if (album.album_type === "compilation") acc[album.label].compilations++;
-
-      return acc;
-    }, {} as Record<string, LabelAccumulator>)
-  )
-    .map(([, stats]) => ({
-      label: stats.label,
-      albumCount: stats.albumCount,
-      trackCount: stats.trackCount,
-      avgPopularity: Math.round(stats.totalPopularity / stats.albumCount),
-      singles: stats.singles,
-      albums: stats.albums,
-      compilations: stats.compilations,
-    }))
-    .sort((a, b) => b.avgPopularity - a.avgPopularity) : [];
+  const labelStats = labelStatsData?.labelStats || [];
+  const albumTypeDistribution = labelStatsData?.albumTypeDistribution || [];
+  const totalAlbums = labelStatsData?.totalAlbums || 0;
 
   // Top 10 labels by popularity
   const top10Labels = labelStats.slice(0, 10);
 
-  // Album type distribution (overall)
-  const albumTypeData = albums ? [
-    {
-      type: "singles",
-      count: albums.filter((a) => a.album_type === "single").length,
-      fill: "var(--color-singles)",
-    },
-    {
-      type: "albums",
-      count: albums.filter((a) => a.album_type === "album").length,
-      fill: "var(--color-albums)",
-    },
-    {
-      type: "compilations",
-      count: albums.filter((a) => a.album_type === "compilation").length,
-      fill: "var(--color-compilations)",
-    },
-  ] : [];
-
-  const totalAlbums = albumTypeData.reduce((acc, item) => acc + item.count, 0);
+  // Album type distribution (for the chart)
+  const albumTypeData = albumTypeDistribution.map((item) => ({
+    type: item.type,
+    count: item.count,
+    fill: item.type === "single"
+      ? "var(--color-singles)"
+      : item.type === "album"
+      ? "var(--color-albums)"
+      : "var(--color-compilations)",
+  }));
 
   if (error) {
     return (
@@ -147,7 +81,7 @@ export default function LabelLensPage() {
     );
   }
 
-  if (isLoading || !albums || !tracks) {
+  if (isLoading || !labelStatsData) {
     return (
       <div className="flex items-center justify-center h-[50vh]">
         <div className="text-center space-y-4">
@@ -163,7 +97,7 @@ export default function LabelLensPage() {
       <div>
         <h1 className="text-3xl font-bold mb-2">Label Lens</h1>
         <p className="text-muted-foreground">
-          Analyze {labelStats.length} unique labels across {albums.length} albums
+          Analyze {labelStats.length} unique labels across {totalAlbums} albums
         </p>
       </div>
 
@@ -184,7 +118,7 @@ export default function LabelLensPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {(albums.length / labelStats.length).toFixed(1)}
+              {(totalAlbums / labelStats.length).toFixed(1)}
             </div>
           </CardContent>
         </Card>

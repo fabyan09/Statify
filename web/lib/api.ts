@@ -41,6 +41,20 @@ export async function fetchArtists(): Promise<Artist[]> {
   return response.json();
 }
 
+export async function fetchArtistsByIds(ids: string[]): Promise<Artist[]> {
+  if (ids.length === 0) return [];
+  const response = await fetch(`${API_BASE_URL}/artists/by-ids`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ ids }),
+    cache: 'no-store',
+  });
+  if (!response.ok) throw new Error("Failed to fetch artists by IDs");
+  return response.json();
+}
+
 export async function fetchAlbums(): Promise<Album[]> {
   const response = await fetch(`${API_BASE_URL}/albums`, {
     cache: 'no-store', // Pas de cache Next.js, React Query gère le cache
@@ -57,6 +71,58 @@ export async function fetchAlbum(id: string): Promise<Album> {
   return response.json();
 }
 
+export interface CohortData {
+  period: string;
+  releases: number;
+  avgPopularity: number;
+  singles: number;
+  albums: number;
+  compilations: number;
+}
+
+export interface ReleaseCohortsResponse {
+  yearlyData: CohortData[];
+  monthlyData: CohortData[];
+  totalReleases: number;
+}
+
+export async function fetchReleaseCohorts(): Promise<ReleaseCohortsResponse> {
+  const response = await fetch(`${API_BASE_URL}/albums/analytics/cohorts`, {
+    cache: 'no-store',
+  });
+  if (!response.ok) throw new Error("Failed to fetch release cohorts");
+  return response.json();
+}
+
+export interface LabelStats {
+  label: string;
+  albumCount: number;
+  trackCount: number;
+  avgPopularity: number;
+  singles: number;
+  albums: number;
+  compilations: number;
+}
+
+export interface AlbumTypeDistribution {
+  type: string;
+  count: number;
+}
+
+export interface LabelStatsResponse {
+  labelStats: LabelStats[];
+  albumTypeDistribution: AlbumTypeDistribution[];
+  totalAlbums: number;
+}
+
+export async function fetchLabelStats(): Promise<LabelStatsResponse> {
+  const response = await fetch(`${API_BASE_URL}/albums/analytics/labels`, {
+    cache: 'no-store',
+  });
+  if (!response.ok) throw new Error("Failed to fetch label stats");
+  return response.json();
+}
+
 export async function syncAlbumTracks(albumId: string): Promise<{ message: string; album: Album; syncedTracks: number }> {
   const response = await fetch(`${API_BASE_URL}/albums/${albumId}/sync-tracks`, {
     method: 'POST',
@@ -70,6 +136,41 @@ export async function syncArtistAlbums(artistId: string): Promise<{ message: str
     method: 'POST',
   });
   if (!response.ok) throw new Error("Failed to sync artist albums");
+  return response.json();
+}
+
+// Spotify Artist Search
+export interface SpotifyArtistSearchResult {
+  spotifyId: string;
+  name: string;
+  images: Array<{ url: string; height: number; width: number }>;
+  genres: string[];
+  popularity: number;
+  followers: number;
+  external_urls: {
+    spotify: string;
+  };
+  isOnStatify: boolean;
+  statifyId?: string;
+}
+
+export async function searchSpotifyArtists(query: string): Promise<SpotifyArtistSearchResult[]> {
+  const response = await fetch(`${API_BASE_URL}/artists/search-spotify?q=${encodeURIComponent(query)}`, {
+    cache: 'no-store',
+  });
+  if (!response.ok) throw new Error("Failed to search Spotify artists");
+  return response.json();
+}
+
+export async function addArtistFromSpotify(spotifyId: string): Promise<Artist> {
+  const response = await fetch(`${API_BASE_URL}/artists/add-from-spotify`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ spotifyId }),
+  });
+  if (!response.ok) throw new Error("Failed to add artist from Spotify");
   return response.json();
 }
 
@@ -245,7 +346,7 @@ export async function fetchAlbumsByIds(ids: string[]): Promise<Album[]> {
   return response.json();
 }
 
-// Playlist API
+// Playlist API - Get tracks for a specific playlist
 export async function fetchPlaylistTracks(playlistId: string): Promise<Track[]> {
   const response = await fetch(`${API_BASE_URL}/playlists/${playlistId}/tracks`, {
     cache: 'no-store',
@@ -255,40 +356,6 @@ export async function fetchPlaylistTracks(playlistId: string): Promise<Track[]> 
 }
 
 // Stats API
-export interface CohortData {
-  period: string;
-  releases: number;
-  avgPopularity: number;
-  singles: number;
-  albums: number;
-  compilations: number;
-}
-
-export async function fetchReleaseCohorts(granularity: 'year' | 'month' = 'year'): Promise<CohortData[]> {
-  const response = await fetch(`${API_BASE_URL}/stats/release-cohorts?granularity=${granularity}`, {
-    cache: 'no-store',
-  });
-  if (!response.ok) throw new Error("Failed to fetch release cohorts");
-  return response.json();
-}
-
-export interface LabelStats {
-  label: string;
-  albumCount: number;
-  trackCount: number;
-  avgPopularity: number;
-  singles: number;
-  albums: number;
-  compilations: number;
-}
-
-export async function fetchLabelStats(): Promise<LabelStats[]> {
-  const response = await fetch(`${API_BASE_URL}/stats/labels`, {
-    cache: 'no-store',
-  });
-  if (!response.ok) throw new Error("Failed to fetch label stats");
-  return response.json();
-}
 
 export interface Collaboration {
   artist1: string;

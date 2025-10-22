@@ -2,106 +2,19 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useAlbums } from "@/lib/hooks";
+import { useReleaseCohorts } from "@/lib/hooks";
 import { Badge } from "@/components/ui/badge";
 import { ReleasesByYearChart } from "./ReleasesByYearChart";
 import { ReleasesByMonthChart } from "./ReleasesByMonthChart";
 import { AvgPopularityByYearChart } from "./AvgPopularityByYearChart";
-
-interface CohortData {
-  period: string;
-  releases: number;
-  avgPopularity: number;
-  singles: number;
-  albums: number;
-  compilations: number;
-}
-
-interface CohortAccumulator {
-  period: string;
-  releases: number;
-  totalPopularity: number;
-  singles: number;
-  albums: number;
-  compilations: number;
-}
+import { CohortData } from "@/lib/api";
 
 export default function ReleaseCohortsPage() {
-  const { data: albums, isLoading, error } = useAlbums();
+  const { data: cohortsData, isLoading, error } = useReleaseCohorts();
 
-  // Group by year
-  const yearlyData: CohortData[] = albums ? Object.entries(
-    albums.reduce((acc, album) => {
-      const year = album.release_date.split("-")[0];
-      // Skip invalid years (0000 or any year before 1900)
-      if (parseInt(year) < 1900) return acc;
-
-      if (!acc[year]) {
-        acc[year] = {
-          period: year,
-          releases: 0,
-          totalPopularity: 0,
-          singles: 0,
-          albums: 0,
-          compilations: 0,
-        };
-      }
-      acc[year].releases++;
-      acc[year].totalPopularity += album.popularity;
-      if (album.album_type === "single") acc[year].singles++;
-      else if (album.album_type === "album") acc[year].albums++;
-      else if (album.album_type === "compilation") acc[year].compilations++;
-      return acc;
-    }, {} as Record<string, CohortAccumulator>)
-  )
-    .map(([, data]) => ({
-      period: data.period,
-      releases: data.releases,
-      avgPopularity: Math.round(data.totalPopularity / data.releases),
-      singles: data.singles,
-      albums: data.albums,
-      compilations: data.compilations,
-    }))
-    .sort((a, b) => a.period.localeCompare(b.period)) : [];
-
-  // Group by year-month
-  const monthlyData: CohortData[] = albums ? Object.entries(
-    albums.reduce((acc, album) => {
-      const [year, month] = album.release_date.split("-");
-      // Skip invalid years (before 1900)
-      if (parseInt(year) < 1900) return acc;
-
-      // If month is invalid or missing, default to January (01)
-      const validMonth = month && parseInt(month) >= 1 && parseInt(month) <= 12 ? month : "01";
-      const yearMonth = `${year}-${validMonth.padStart(2, '0')}`;
-
-      if (!acc[yearMonth]) {
-        acc[yearMonth] = {
-          period: yearMonth,
-          releases: 0,
-          totalPopularity: 0,
-          singles: 0,
-          albums: 0,
-          compilations: 0,
-        };
-      }
-      acc[yearMonth].releases++;
-      acc[yearMonth].totalPopularity += album.popularity;
-      if (album.album_type === "single") acc[yearMonth].singles++;
-      else if (album.album_type === "album") acc[yearMonth].albums++;
-      else if (album.album_type === "compilation") acc[yearMonth].compilations++;
-      return acc;
-    }, {} as Record<string, CohortAccumulator>)
-  )
-    .map(([, data]) => ({
-      period: data.period,
-      releases: data.releases,
-      avgPopularity: Math.round(data.totalPopularity / data.releases),
-      singles: data.singles,
-      albums: data.albums,
-      compilations: data.compilations,
-    }))
-    .sort((a, b) => a.period.localeCompare(b.period)) : [];
+  const yearlyData = cohortsData?.yearlyData || [];
+  const monthlyData = cohortsData?.monthlyData || [];
+  const totalReleases = cohortsData?.totalReleases || 0;
 
   // Top performing cohorts
   const topCohorts = [...yearlyData]
@@ -128,7 +41,7 @@ export default function ReleaseCohortsPage() {
     );
   }
 
-  if (isLoading || !albums) {
+  if (isLoading || !cohortsData) {
     return (
       <div className="flex items-center justify-center h-[50vh]">
         <div className="text-center space-y-4">
@@ -155,7 +68,7 @@ export default function ReleaseCohortsPage() {
             <CardTitle className="text-sm font-medium">Total Releases</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{albums.length}</div>
+            <div className="text-2xl font-bold">{totalReleases}</div>
           </CardContent>
         </Card>
 
@@ -176,7 +89,7 @@ export default function ReleaseCohortsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {(albums.length / yearlyData.length).toFixed(1)}
+              {yearlyData.length > 0 ? (totalReleases / yearlyData.length).toFixed(1) : 0}
             </div>
           </CardContent>
         </Card>

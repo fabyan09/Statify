@@ -48,6 +48,10 @@ export class ArtistsService {
     return this.artistModel.find({ _id: { $in: ids } }).exec();
   }
 
+  async findBySpotifyId(spotifyId: string) {
+    return this.artistModel.findById(spotifyId).exec();
+  }
+
   async getArtistAlbums(artistId: string) {
     // Cette méthode sera implémentée dans le controller en utilisant AlbumsService
     // pour éviter la dépendance circulaire
@@ -208,6 +212,80 @@ export class ArtistsService {
       };
     } catch (error) {
       console.error(`[ARTIST-SYNC] Error syncing artist ${artistId}:`, error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Recherche des artistes sur Spotify et indique s'ils sont déjà dans Statify
+   * @param query La requête de recherche
+   * @returns Les artistes trouvés avec le statut isOnStatify
+   */
+  async searchSpotifyArtists(query: string) {
+    try {
+      // Rechercher sur Spotify
+      const spotifyArtists = await this.spotifyService.searchArtists(query);
+
+      // Récupérer tous les artistes existants en DB
+      const existingArtists = await this.artistModel.find().exec();
+      const existingArtistIds = new Set(existingArtists.map(a => a._id.toString()));
+
+      // Mapper les résultats avec le statut isOnStatify
+      return spotifyArtists.map((artist) => ({
+        spotifyId: artist.id,
+        name: artist.name,
+        images: artist.images,
+        genres: artist.genres,
+        popularity: artist.popularity,
+        followers: artist.followers?.total || 0,
+        external_urls: artist.external_urls,
+        isOnStatify: existingArtistIds.has(artist.id),
+        statifyId: existingArtistIds.has(artist.id) ? artist.id : undefined,
+      }));
+    } catch (error) {
+      console.error('[ARTIST-SEARCH] Error searching Spotify artists:', error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Ajoute un artiste depuis Spotify dans la DB Statify
+   * @param spotifyId L'ID Spotify de l'artiste
+   * @returns L'artiste créé
+   */
+  async addArtistFromSpotify(spotifyId: string) {
+    try {
+      // Vérifier si l'artiste existe déjà
+      const existingArtist = await this.findBySpotifyId(spotifyId);
+      if (existingArtist) {
+        console.log(`[ARTIST-ADD] Artist ${spotifyId} already exists in Statify`);
+        return existingArtist;
+      }
+
+      // Récupérer les informations de l'artiste depuis Spotify
+      const spotifyArtist = await this.spotifyService.getArtist(spotifyId);
+
+      // Créer l'artiste dans la DB avec l'ID Spotify comme _id
+      const artistData = {
+        _id: spotifyArtist.id,
+        name: spotifyArtist.name,
+        genres: spotifyArtist.genres,
+        popularity: spotifyArtist.popularity,
+        followers: spotifyArtist.followers?.total || 0,
+        href: spotifyArtist.href,
+        uri: spotifyArtist.uri,
+        external_urls: spotifyArtist.external_urls,
+        images: spotifyArtist.images,
+        album_ids: [],
+        spotify_synced: false,
+      };
+
+      const createdArtist = await this.create(artistData as any);
+      console.log(`[ARTIST-ADD] Artist ${spotifyId} added to Statify`);
+
+      return createdArtist;
+    } catch (error) {
+      console.error('[ARTIST-ADD] Error adding artist from Spotify:', error.message);
       throw error;
     }
   }

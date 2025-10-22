@@ -109,6 +109,189 @@ export class AlbumsService {
     return tracks;
   }
 
+  async getReleaseCohorts() {
+    // Aggregation pipeline pour calculer les stats par année et par mois
+    const yearlyData = await this.albumModel.aggregate([
+      {
+        $addFields: {
+          year: { $substr: ['$release_date', 0, 4] }
+        }
+      },
+      {
+        $match: {
+          year: { $gte: '1900' } // Filtrer les années invalides
+        }
+      },
+      {
+        $group: {
+          _id: '$year',
+          releases: { $sum: 1 },
+          totalPopularity: { $sum: '$popularity' },
+          singles: {
+            $sum: { $cond: [{ $eq: ['$album_type', 'single'] }, 1, 0] }
+          },
+          albums: {
+            $sum: { $cond: [{ $eq: ['$album_type', 'album'] }, 1, 0] }
+          },
+          compilations: {
+            $sum: { $cond: [{ $eq: ['$album_type', 'compilation'] }, 1, 0] }
+          }
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          period: '$_id',
+          releases: 1,
+          avgPopularity: { $round: [{ $divide: ['$totalPopularity', '$releases'] }, 0] },
+          singles: 1,
+          albums: 1,
+          compilations: 1
+        }
+      },
+      {
+        $sort: { period: 1 }
+      }
+    ]).exec();
+
+    // Aggregation pour les données mensuelles
+    const monthlyData = await this.albumModel.aggregate([
+      {
+        $addFields: {
+          year: { $substr: ['$release_date', 0, 4] },
+          month: { $substr: ['$release_date', 5, 2] }
+        }
+      },
+      {
+        $match: {
+          year: { $gte: '1900' } // Filtrer les années invalides
+        }
+      },
+      {
+        $addFields: {
+          // Si le mois est invalide, utiliser '01'
+          validMonth: {
+            $cond: [
+              { $and: [
+                { $gte: ['$month', '01'] },
+                { $lte: ['$month', '12'] }
+              ]},
+              '$month',
+              '01'
+            ]
+          }
+        }
+      },
+      {
+        $addFields: {
+          yearMonth: { $concat: ['$year', '-', '$validMonth'] }
+        }
+      },
+      {
+        $group: {
+          _id: '$yearMonth',
+          releases: { $sum: 1 },
+          totalPopularity: { $sum: '$popularity' },
+          singles: {
+            $sum: { $cond: [{ $eq: ['$album_type', 'single'] }, 1, 0] }
+          },
+          albums: {
+            $sum: { $cond: [{ $eq: ['$album_type', 'album'] }, 1, 0] }
+          },
+          compilations: {
+            $sum: { $cond: [{ $eq: ['$album_type', 'compilation'] }, 1, 0] }
+          }
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          period: '$_id',
+          releases: 1,
+          avgPopularity: { $round: [{ $divide: ['$totalPopularity', '$releases'] }, 0] },
+          singles: 1,
+          albums: 1,
+          compilations: 1
+        }
+      },
+      {
+        $sort: { period: 1 }
+      }
+    ]).exec();
+
+    // Stats globales
+    const totalReleases = await this.albumModel.countDocuments().exec();
+
+    return {
+      yearlyData,
+      monthlyData,
+      totalReleases
+    };
+  }
+
+  async getLabelStats() {
+    // Aggregation pour calculer les stats par label
+    const labelStats = await this.albumModel.aggregate([
+      {
+        $group: {
+          _id: '$label',
+          albumCount: { $sum: 1 },
+          trackCount: { $sum: { $size: '$track_ids' } },
+          totalPopularity: { $sum: '$popularity' },
+          singles: {
+            $sum: { $cond: [{ $eq: ['$album_type', 'single'] }, 1, 0] }
+          },
+          albums: {
+            $sum: { $cond: [{ $eq: ['$album_type', 'album'] }, 1, 0] }
+          },
+          compilations: {
+            $sum: { $cond: [{ $eq: ['$album_type', 'compilation'] }, 1, 0] }
+          }
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          label: '$_id',
+          albumCount: 1,
+          trackCount: 1,
+          avgPopularity: { $round: [{ $divide: ['$totalPopularity', '$albumCount'] }, 0] },
+          singles: 1,
+          albums: 1,
+          compilations: 1
+        }
+      },
+      {
+        $sort: { avgPopularity: -1 }
+      }
+    ]).exec();
+
+    // Distribution globale des types d'albums
+    const albumTypeDistribution = await this.albumModel.aggregate([
+      {
+        $group: {
+          _id: '$album_type',
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          type: '$_id',
+          count: 1
+        }
+      }
+    ]).exec();
+
+    const totalAlbums = await this.albumModel.countDocuments().exec();
+
+    return {
+      labelStats,
+      albumTypeDistribution,
+      totalAlbums
+    };
+  }
+
   async syncTracksFromSpotify(albumId: string) {
     console.log(`[SYNC] Starting sync for album ${albumId}`);
 

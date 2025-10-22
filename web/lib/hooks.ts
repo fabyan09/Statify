@@ -19,6 +19,11 @@ import {
   search,
   PaginatedResult,
   fetchRecommendations,
+  searchSpotifyArtists,
+  addArtistFromSpotify,
+  fetchPlaylistTracks,
+  fetchReleaseCohorts,
+  fetchLabelStats,
 } from "./api";
 import { SearchTrack, SearchAlbum, SearchArtist, SearchPlaylist, SearchUser } from "./types";
 
@@ -140,8 +145,10 @@ export function useAddTracksToPlaylist() {
   return useMutation({
     mutationFn: ({ playlistId, trackIds }: { playlistId: string; trackIds: string[] }) =>
       playlistApi.addTracks(playlistId, trackIds),
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["playlists"] });
+      queryClient.invalidateQueries({ queryKey: ["playlist", variables.playlistId] });
+      queryClient.invalidateQueries({ queryKey: ["playlist-tracks", variables.playlistId] });
     },
   });
 }
@@ -165,9 +172,10 @@ export function useAddCollaborator() {
   return useMutation({
     mutationFn: ({ playlistId, userId }: { playlistId: string; userId: string }) =>
       playlistApi.addCollaborator(playlistId, userId),
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["playlists"] });
       queryClient.invalidateQueries({ queryKey: ["public-playlists"] });
+      queryClient.invalidateQueries({ queryKey: ["playlist", variables.playlistId] });
     },
   });
 }
@@ -180,11 +188,43 @@ export function useUserLibrary(userId: string) {
   });
 }
 
+export function useUserLikedTracks(userId: string) {
+  return useQuery({
+    queryKey: ["user-liked-tracks", userId],
+    queryFn: () => userApi.getLikedTracks(userId),
+    enabled: !!userId,
+  });
+}
+
+export function useUserLikedAlbums(userId: string) {
+  return useQuery({
+    queryKey: ["user-liked-albums", userId],
+    queryFn: () => userApi.getLikedAlbums(userId),
+    enabled: !!userId,
+  });
+}
+
+export function useUserFavoriteArtists(userId: string) {
+  return useQuery({
+    queryKey: ["user-favorite-artists", userId],
+    queryFn: () => userApi.getFavoriteArtists(userId),
+    enabled: !!userId,
+  });
+}
+
 export function useUserPlaylists(userId: string, params?: PaginationParams) {
   return useQuery({
     queryKey: ["user-playlists", userId, params?.page, params?.limit],
     queryFn: () => playlistApi.getByUser(userId, params),
     enabled: !!userId,
+  });
+}
+
+export function usePlaylistTracks(playlistId: string) {
+  return useQuery({
+    queryKey: ["playlist-tracks", playlistId],
+    queryFn: () => fetchPlaylistTracks(playlistId),
+    enabled: !!playlistId,
   });
 }
 
@@ -289,5 +329,39 @@ export function useRecommendations(userId: string) {
     queryFn: () => fetchRecommendations(userId),
     enabled: !!userId,
     staleTime: 60 * 60 * 1000, // 1 heure - correspond au cache côté serveur
+  });
+}
+
+export function useSearchSpotifyArtists(query: string) {
+  return useQuery({
+    queryKey: ["spotify-artists-search", query],
+    queryFn: () => searchSpotifyArtists(query),
+    enabled: !!query && query.trim().length > 0,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}
+
+export function useAddArtistFromSpotify() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (spotifyId: string) => addArtistFromSpotify(spotifyId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["artists"] });
+      queryClient.invalidateQueries({ queryKey: ["spotify-artists-search"] });
+    },
+  });
+}
+
+export function useReleaseCohorts() {
+  return useQuery({
+    queryKey: ["release-cohorts"],
+    queryFn: () => fetchReleaseCohorts(),
+  });
+}
+
+export function useLabelStats() {
+  return useQuery({
+    queryKey: ["label-stats"],
+    queryFn: () => fetchLabelStats(),
   });
 }

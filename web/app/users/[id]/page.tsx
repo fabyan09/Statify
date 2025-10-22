@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useParams } from "next/navigation";
+import { Artist } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -13,9 +14,9 @@ import {
   useUser,
   useUserLibrary,
   useUserPlaylists,
-  useTracks,
-  useAlbums,
-  useArtists,
+  useUserLikedTracks,
+  useUserLikedAlbums,
+  useUserFavoriteArtists,
   usePlaylists,
   useAddToLibrary,
   useRemoveFromLibrary,
@@ -34,12 +35,14 @@ export default function UserProfilePage() {
   const { data: userLibrary, isLoading: libraryLoading } = useUserLibrary(userId);
   const { data: userPlaylistsResult, isLoading: playlistsLoading } = useUserPlaylists(userId, { limit: 1000 });
 
-  const { data: tracksResult, isLoading: tracksLoading } = useTracks({ limit: 1000 });
-  const { data: albums, isLoading: albumsLoading } = useAlbums();
-  const { data: artists, isLoading: artistsLoading } = useArtists();
+  // Charger uniquement les données de la bibliothèque de l'utilisateur
+  // Les tracks retournées ont déjà album_id et artist_ids populés par le backend
+  const { data: likedTracks, isLoading: likedTracksLoading } = useUserLikedTracks(userId);
+  const { data: likedAlbums, isLoading: likedAlbumsLoading } = useUserLikedAlbums(userId);
+  const { data: favoriteArtists, isLoading: favoriteArtistsLoading } = useUserFavoriteArtists(userId);
+
   const { data: allPlaylistsResult } = usePlaylists({ limit: 1000 });
 
-  const tracks = tracksResult?.data || [];
   const userPlaylists = userPlaylistsResult?.data || [];
   const allPlaylists = allPlaylistsResult?.data || [];
 
@@ -55,16 +58,10 @@ export default function UserProfilePage() {
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<string>("");
   const [selectedTrackId, setSelectedTrackId] = useState<string>("");
 
-  const albumMap = albums ? new Map(albums.map((album) => [album._id, album])) : new Map();
-  const artistMap = artists ? new Map(artists.map((artist) => [artist._id, artist])) : new Map();
+  // Les tracks sont déjà triées par popularité depuis le backend
+  const sortedLikedTracks = likedTracks ? [...likedTracks].sort((a, b) => b.popularity - a.popularity) : [];
 
-  // Get liked tracks from library
-  const likedTrackIds = userLibrary?.tracks || profileUser?.liked_tracks || [];
-  const likedTracks = (tracks || [])
-    .filter((track) => likedTrackIds.includes(track._id))
-    .sort((a, b) => b.popularity - a.popularity);
-
-  const isLoading = userLoading || libraryLoading || playlistsLoading || tracksLoading || albumsLoading || artistsLoading;
+  const isLoading = userLoading || libraryLoading || playlistsLoading || likedTracksLoading;
 
   function formatDuration(ms: number): string {
     const minutes = Math.floor(ms / 60000);
@@ -173,7 +170,7 @@ export default function UserProfilePage() {
                   <div className="text-muted-foreground">Playlists</div>
                 </div>
                 <div>
-                  <div className="text-2xl font-bold">{likedTracks.length}</div>
+                  <div className="text-2xl font-bold">{sortedLikedTracks.length}</div>
                   <div className="text-muted-foreground">Liked Tracks</div>
                 </div>
                 <div>
@@ -252,11 +249,11 @@ export default function UserProfilePage() {
             <CardHeader>
               <CardTitle>Liked Tracks</CardTitle>
               <CardDescription>
-                {likedTracks.length} liked track{likedTracks.length !== 1 ? "s" : ""}
+                {sortedLikedTracks.length} liked track{sortedLikedTracks.length !== 1 ? "s" : ""}
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {likedTracks.length > 0 ? (
+              {sortedLikedTracks.length > 0 ? (
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -271,10 +268,15 @@ export default function UserProfilePage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {likedTracks.map((track) => {
-                      const album = albumMap.get(track.album_id);
-                      const trackArtists = track.artist_ids.map((id) => artistMap.get(id)).filter(Boolean);
-                      const artistNames = trackArtists.map((artist) => artist?.name).join(", ") || "Unknown Artist";
+                    {sortedLikedTracks.map((track) => {
+                      // Les données sont déjà populées par le backend
+                      const album = typeof track.album_id === 'string' ? null : track.album_id;
+                      const trackArtists = (Array.isArray(track.artist_ids)
+                        ? track.artist_ids.map((artistOrId) =>
+                            typeof artistOrId === 'string' ? null : artistOrId
+                          ).filter(Boolean)
+                        : []) as unknown as Artist[];
+                      const artistNames = trackArtists.map((artist) => artist.name).join(", ") || "Unknown Artist";
                       const albumName = album?.name || "Unknown Album";
 
                       return (

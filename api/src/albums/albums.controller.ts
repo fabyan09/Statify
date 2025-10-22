@@ -22,6 +22,16 @@ export class AlbumsController {
     return this.albumsService.findByIds(ids);
   }
 
+  @Get('analytics/cohorts')
+  getReleaseCohorts() {
+    return this.albumsService.getReleaseCohorts();
+  }
+
+  @Get('analytics/labels')
+  getLabelStats() {
+    return this.albumsService.getLabelStats();
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.albumsService.findOne(id);

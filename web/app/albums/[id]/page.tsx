@@ -10,7 +10,6 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   useAlbum,
-  useArtists,
   usePlaylists,
   useUser,
   useAddToLibrary,
@@ -19,7 +18,7 @@ import {
   useSyncAlbumTracks,
 } from "@/lib/hooks";
 import { useQuery } from "@tanstack/react-query";
-import { fetchAlbumTracks } from "@/lib/api";
+import { fetchAlbumTracks, fetchArtistsByIds } from "@/lib/api";
 import { useAuth } from "@/contexts/auth-context";
 import { ExternalLink, Heart, Plus, ArrowLeft, Calendar, Music, RefreshCw } from "lucide-react";
 import Image from "next/image";
@@ -30,12 +29,25 @@ export default function AlbumDetailPage() {
   const albumId = params.id as string;
 
   const { data: album, isLoading: albumLoading } = useAlbum(albumId);
-  const { data: artists, isLoading: artistsLoading } = useArtists();
   const { data: tracks, isLoading: tracksLoading } = useQuery({
     queryKey: ["album-tracks", albumId],
     queryFn: () => fetchAlbumTracks(albumId),
     enabled: !!albumId,
   });
+
+  // Charger uniquement les artistes nécessaires (album + tracks)
+  const artistIds = album && tracks
+    ? [...new Set([...album.artist_ids, ...tracks.flatMap(t => t.artist_ids)])]
+    : [];
+
+  const { data: artists, isLoading: artistsLoading } = useQuery({
+    queryKey: ["artists-by-ids", artistIds],
+    queryFn: () => fetchArtistsByIds(artistIds),
+    enabled: !!album && !!tracks && artistIds.length > 0,
+  });
+
+  // Charger toutes les playlists (pour le dropdown d'ajout de tracks)
+  // Acceptable pour la plupart des utilisateurs (<100 playlists)
   const { data: playlistsResult } = usePlaylists({ limit: 1000 });
 
   const playlists = playlistsResult?.data || [];

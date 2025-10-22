@@ -68,6 +68,7 @@ export class TracksService {
     return this.trackModel
       .find({ _id: { $in: ids } })
       .populate('album_id') // Include full album data
+      .populate('artist_ids') // Include full artist data
       .exec();
   }
 

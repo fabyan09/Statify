@@ -52,6 +52,10 @@ export default function LibraryPage() {
     enabled: !!currentUser,
   });
 
+  // Créer des Maps pour optimiser les lookups (éviter O(n*m))
+  const albumMap = new Map(likedAlbums.map(album => [album._id, album]));
+  const artistMap = new Map(favoriteArtists.map(artist => [artist._id, artist]));
+
   // Remove from library mutation
   const removeMutation = useMutation({
     mutationFn: (data: { track_id?: string; album_id?: string; artist_id?: string }) =>
@@ -149,7 +153,7 @@ export default function LibraryPage() {
                   {likedTracks.map((track) => {
                     // Handle both populated album (Album object) and string reference
                     const album = typeof track.album_id === 'string'
-                      ? likedAlbums.find(a => a._id === track.album_id)
+                      ? albumMap.get(track.album_id)
                       : track.album_id;
                     return (
                       <div
@@ -217,7 +221,7 @@ export default function LibraryPage() {
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                   {likedAlbums.map((album) => {
                     const albumArtists = album.artist_ids
-                      .map(id => favoriteArtists.find(a => a._id === id))
+                      .map(id => artistMap.get(id))
                       .filter((a): a is NonNullable<typeof a> => a !== undefined);
 
                     return (
