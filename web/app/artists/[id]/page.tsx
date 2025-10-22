@@ -11,8 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   useArtist,
-  useAlbums,
-  useTracks,
+  useArtistAlbums,
+  useArtistTracks,
   usePlaylists,
   useUser,
   useAddToLibrary,
@@ -30,11 +30,10 @@ export default function ArtistDetailPage() {
   const artistId = params.id as string;
 
   const { data: artist, isLoading: artistLoading } = useArtist(artistId);
-  const { data: albums, isLoading: albumsLoading } = useAlbums();
-  const { data: tracksResult, isLoading: tracksLoading } = useTracks({ limit: 1000 });
+  const { data: albums, isLoading: albumsLoading } = useArtistAlbums(artistId);
+  const { data: tracks, isLoading: tracksLoading } = useArtistTracks(artistId);
   const { data: playlistsResult } = usePlaylists({ limit: 1000 });
 
-  const tracks = tracksResult?.data || [];
   const playlists = playlistsResult?.data || [];
 
   // Get authenticated user
@@ -70,14 +69,9 @@ export default function ArtistDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [artist?.spotify_synced, artistId, hasTriggeredSync]);
 
-  // Filter albums and tracks for this artist
-  const artistAlbums = (albums || [])
-    .filter((album) => album.artist_ids.includes(artistId))
-    .sort((a, b) => b.release_date.localeCompare(a.release_date)); // Most recent first
-
-  const artistTracks = (tracks || [])
-    .filter((track) => track.artist_ids.includes(artistId))
-    .sort((a, b) => b.popularity - a.popularity); // Most popular first
+  // Albums and tracks already filtered and sorted by the API endpoint
+  const artistAlbums = albums || [];
+  const artistTracks = tracks || [];
 
   const isLoading = artistLoading || albumsLoading || tracksLoading;
 

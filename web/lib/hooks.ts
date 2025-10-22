@@ -6,6 +6,8 @@ import {
   fetchAlbums,
   fetchAlbum,
   fetchTracks,
+  fetchArtistTracks,
+  fetchArtistAlbums,
   fetchDashboardStats,
   fetchTopArtists,
   PaginationParams,
@@ -52,10 +54,26 @@ export function useAlbum(albumId: string) {
   });
 }
 
+export function useArtistAlbums(artistId: string) {
+  return useQuery({
+    queryKey: ["artist-albums", artistId],
+    queryFn: () => fetchArtistAlbums(artistId),
+    enabled: !!artistId,
+  });
+}
+
 export function useTracks(params?: PaginationParams) {
   return useQuery({
     queryKey: ["tracks", params?.page, params?.limit],
     queryFn: () => fetchTracks(params),
+  });
+}
+
+export function useArtistTracks(artistId: string) {
+  return useQuery({
+    queryKey: ["artist-tracks", artistId],
+    queryFn: () => fetchArtistTracks(artistId),
+    enabled: !!artistId,
   });
 }
 
@@ -213,6 +231,8 @@ export function useSyncArtistAlbums() {
       await queryClient.invalidateQueries({ queryKey: ["artists"] });
       await queryClient.invalidateQueries({ queryKey: ["albums"] });
       await queryClient.invalidateQueries({ queryKey: ["tracks"] });
+      await queryClient.invalidateQueries({ queryKey: ["artist-albums", artistId] });
+      await queryClient.invalidateQueries({ queryKey: ["artist-tracks", artistId] });
       console.log('useSyncArtistAlbums: All done!');
     },
     onError: (error) => {

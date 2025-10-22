@@ -81,6 +81,14 @@ export async function fetchAlbumTracks(albumId: string): Promise<Track[]> {
   return response.json();
 }
 
+export async function fetchArtistTracks(artistId: string): Promise<Track[]> {
+  const response = await fetch(`${API_BASE_URL}/artists/${artistId}/tracks`, {
+    cache: 'no-store',
+  });
+  if (!response.ok) throw new Error("Failed to fetch artist tracks");
+  return response.json();
+}
+
 export async function fetchTracks(params?: PaginationParams): Promise<PaginatedResult<Track>> {
   const query = buildPaginationQuery(params);
   const response = await fetch(`${API_BASE_URL}/tracks${query}`, {
@@ -185,14 +193,6 @@ export async function fetchArtistAlbums(artistId: string): Promise<Album[]> {
     cache: 'no-store',
   });
   if (!response.ok) throw new Error("Failed to fetch artist albums");
-  return response.json();
-}
-
-export async function fetchArtistTracks(artistId: string): Promise<Track[]> {
-  const response = await fetch(`${API_BASE_URL}/artists/${artistId}/tracks`, {
-    cache: 'no-store',
-  });
-  if (!response.ok) throw new Error("Failed to fetch artist tracks");
   return response.json();
 }
 
