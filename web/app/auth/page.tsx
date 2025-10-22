@@ -136,7 +136,7 @@ export default function AuthPage() {
       <Card className="w-full max-w-md !bg-background/10">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <div className="p-3 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl">
+            <div className="p-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl">
               <Music className="h-8 w-8 text-white" />
             </div>
           </div>

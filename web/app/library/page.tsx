@@ -75,7 +75,7 @@ export default function LibraryPage() {
   return (
     <div className="space-y-8">
       <div className="flex items-center gap-4">
-        <div className="p-3 bg-gradient-to-br from-pink-500 to-purple-600 rounded-xl">
+        <div className="p-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl">
           <Heart className="h-8 w-8 text-white" />
         </div>
         <div>
@@ -147,7 +147,10 @@ export default function LibraryPage() {
               ) : (
                 <div className="space-y-2">
                   {likedTracks.map((track) => {
-                    const album = likedAlbums.find(a => a._id === track.album_id);
+                    // Handle both populated album (Album object) and string reference
+                    const album = typeof track.album_id === 'string'
+                      ? likedAlbums.find(a => a._id === track.album_id)
+                      : track.album_id;
                     return (
                       <div
                         key={track._id}
@@ -163,7 +166,7 @@ export default function LibraryPage() {
                               className="object-cover"
                             />
                           ) : (
-                            <div className="w-full h-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                            <div className="w-full h-full bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center">
                               <Music className="w-6 h-6 text-white" />
                             </div>
                           )}
@@ -300,7 +303,7 @@ export default function LibraryPage() {
                                 className="object-cover group-hover:scale-105 transition-transform duration-300"
                               />
                             ) : (
-                              <div className="w-full h-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                              <div className="w-full h-full bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center">
                                 <User className="w-12 h-12 text-white" />
                               </div>
                             )}

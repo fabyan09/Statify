@@ -155,7 +155,7 @@ export default function UserProfilePage() {
           <div className="flex flex-col md:flex-row gap-6 items-center md:items-start">
             {/* User Avatar */}
             <div className="relative w-32 h-32 rounded-full overflow-hidden bg-muted flex-shrink-0">
-              <div className="h-full w-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+              <div className="h-full w-full bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center">
                 <User className="h-16 w-16 text-white" />
               </div>
             </div>
@@ -210,7 +210,7 @@ export default function UserProfilePage() {
                       <Link href={`/playlists/${playlist._id}`}>
                         <CardContent className="p-6 cursor-pointer">
                           <div className="flex items-start gap-4">
-                            <div className="h-16 w-16 rounded bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center flex-shrink-0">
+                            <div className="h-16 w-16 rounded bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center flex-shrink-0">
                               <ListMusic className="h-8 w-8 text-white" />
                             </div>
                             <div className="flex-1 min-w-0">

@@ -65,7 +65,10 @@ export class TracksService {
   }
 
   async findByIds(ids: string[]) {
-    return this.trackModel.find({ _id: { $in: ids } }).exec();
+    return this.trackModel
+      .find({ _id: { $in: ids } })
+      .populate('album_id') // Include full album data
+      .exec();
   }
 
   async findByArtist(artistId: string) {
