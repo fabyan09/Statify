@@ -24,6 +24,7 @@ import {
   fetchPlaylistTracks,
   fetchReleaseCohorts,
   fetchLabelStats,
+  fetchCollaborations,
 } from "./api";
 import { SearchTrack, SearchAlbum, SearchArtist, SearchPlaylist, SearchUser } from "./types";
 
@@ -363,5 +364,13 @@ export function useLabelStats() {
   return useQuery({
     queryKey: ["label-stats"],
     queryFn: () => fetchLabelStats(),
+  });
+}
+
+export function useCollaborations(minCount: number = 1) {
+  return useQuery({
+    queryKey: ["collaborations", minCount],
+    queryFn: () => fetchCollaborations(minCount),
+    staleTime: 5 * 60 * 1000, // 5 minutes - les collaborations changent rarement
   });
 }
