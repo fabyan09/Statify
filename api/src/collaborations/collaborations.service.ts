@@ -39,32 +39,55 @@ export class CollaborationsService {
   async getCollaborations(
     minCollabCount: number = 1,
   ): Promise<CollaborationResponse> {
-    // Fetch all tracks with multiple artists (collaborations)
+    // Step 1: Get top 300 French rap artists
+    const frenchRapArtists = await this.artistModel
+      .find({
+        genres: { $in: ['french rap', 'french hip hop', 'rap francais'] },
+      })
+      .sort({ popularity: -1 }) // Sort by popularity descending
+      .limit(300)
+      .select('_id')
+      .lean()
+      .exec();
+
+    const frenchRapArtistIds = frenchRapArtists.map((a) => a._id.toString());
+
+    // Step 2: Fetch only collaborative tracks involving these artists
     const collaborativeTracks = await this.trackModel
       .find({
         $expr: { $gt: [{ $size: '$artist_ids' }, 1] },
+        artist_ids: { $in: frenchRapArtistIds },
       })
       .select('artist_ids')
       .lean()
       .exec();
 
-    // Calculate collaborations
+    // Step 3: Calculate collaborations (only between French rap artists)
     const collabMap = new Map<string, number>();
+    const frenchRapArtistSet = new Set(frenchRapArtistIds);
 
     collaborativeTracks.forEach((track) => {
       if (track.artist_ids.length > 1) {
-        for (let i = 0; i < track.artist_ids.length; i++) {
-          for (let j = i + 1; j < track.artist_ids.length; j++) {
-            const key = [track.artist_ids[i], track.artist_ids[j]]
-              .sort()
-              .join('-');
-            collabMap.set(key, (collabMap.get(key) || 0) + 1);
+        // Filter to only include French rap artists in this track
+        const frenchArtistsInTrack = track.artist_ids.filter((id) =>
+          frenchRapArtistSet.has(id),
+        );
+
+        // Only count collaborations between French rap artists
+        if (frenchArtistsInTrack.length > 1) {
+          for (let i = 0; i < frenchArtistsInTrack.length; i++) {
+            for (let j = i + 1; j < frenchArtistsInTrack.length; j++) {
+              const key = [frenchArtistsInTrack[i], frenchArtistsInTrack[j]]
+                .sort()
+                .join('-');
+              collabMap.set(key, (collabMap.get(key) || 0) + 1);
+            }
           }
         }
       }
     });
 
-    // Filter by minimum collaboration count
+    // Step 4: Filter by minimum collaboration count
     const collaborations: Collaboration[] = Array.from(collabMap.entries())
       .map(([key, count]) => {
         const [artist1, artist2] = key.split('-');
@@ -72,14 +95,14 @@ export class CollaborationsService {
       })
       .filter((collab) => collab.count >= minCollabCount);
 
-    // Get unique artist IDs from collaborations
+    // Step 5: Get unique artist IDs from collaborations
     const collabArtistIds = new Set<string>();
     collaborations.forEach(({ artist1, artist2 }) => {
       collabArtistIds.add(artist1);
       collabArtistIds.add(artist2);
     });
 
-    // Fetch artist details for nodes
+    // Step 6: Fetch artist details for nodes
     const artists = await this.artistModel
       .find({ _id: { $in: Array.from(collabArtistIds) } })
       .lean()
@@ -94,7 +117,7 @@ export class CollaborationsService {
       genres: artist.genres,
     }));
 
-    // Calculate stats
+    // Step 7: Calculate stats
     const stats = {
       totalCollaborations: collaborations.length,
       collaborativeTracks: collaborativeTracks.length,
