@@ -53,7 +53,7 @@ export interface Track {
   href: string;
   uri: string;
   external_urls: ExternalUrls;
-  album_id: string;
+  album_id: string | Album; // Can be populated with full Album object
   artist_ids: string[];
   added_at: string;
   added_by: string;

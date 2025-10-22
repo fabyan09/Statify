@@ -73,16 +73,18 @@ export class AlbumsService {
     return result;
   }
 
-  async upsert(id: string, albumData: any) {
+  async upsert(id: string, albumData: any, options?: { skipCacheInvalidation?: boolean }) {
     const result = await this.albumModel
       .findByIdAndUpdate(id, albumData, { upsert: true, new: true })
       .exec();
-    // Invalidate cache
-    await this.invalidateAlbumsCache();
+    // Invalidate cache (skip si demandé pour optimiser les batch operations)
+    if (!options?.skipCacheInvalidation) {
+      await this.invalidateAlbumsCache();
+    }
     return result;
   }
 
-  private async invalidateAlbumsCache() {
+  async invalidateAlbumsCache() {
     // Simply delete the main albums cache key
     await this.cacheManager.del('all-albums');
   }
@@ -143,14 +145,14 @@ export class AlbumsService {
       completeTracksData.map(track => [track.id, track])
     );
 
-    // 5. Upsert les tracks en base de données
-    const createdTrackIds: string[] = [];
-    for (const spotifyTrack of spotifyTracks) {
+    // 5. Upsert les tracks en base de données (EN PARALLÈLE pour meilleure performance)
+    console.log(`[SYNC] Upserting ${spotifyTracks.length} tracks in parallel...`);
+    const trackUpsertPromises = spotifyTracks.map(async (spotifyTrack) => {
       try {
         // Récupérer les données complètes de la track
         const completeTrackData = tracksDataMap.get(spotifyTrack.id);
 
-        // Upsert le track avec les informations de Spotify
+        // Upsert le track avec les informations de Spotify (skip cache invalidation pour optimiser)
         const trackData = {
           name: spotifyTrack.name,
           popularity: completeTrackData?.popularity || 0, // Utilise la popularité du 2e call
@@ -166,12 +168,15 @@ export class AlbumsService {
           artist_ids: spotifyTrack.artists.map((artist) => artist.id),
         };
 
-        const upsertedTrack = await this.tracksService.upsert(spotifyTrack.id, trackData);
-        createdTrackIds.push(upsertedTrack._id);
+        const upsertedTrack = await this.tracksService.upsert(spotifyTrack.id, trackData, { skipCacheInvalidation: true });
+        return upsertedTrack._id;
       } catch (error) {
         console.error(`Failed to upsert track ${spotifyTrack.id}:`, error);
+        return null;
       }
-    }
+    });
+
+    const createdTrackIds: string[] = (await Promise.all(trackUpsertPromises)).filter(id => id !== null);
 
     // 6. Mettre à jour l'album avec les track_ids et spotify_synced = true
     const updatedAlbum = await this.albumModel

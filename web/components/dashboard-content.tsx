@@ -199,7 +199,7 @@ export function DashboardContent() {
               <CardDescription>Based on Spotify popularity score</CardDescription>
             </div>
             <Link
-              href="/artist-board"
+              href="/search"
               className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-1 group"
             >
               <span>See All Artists</span>

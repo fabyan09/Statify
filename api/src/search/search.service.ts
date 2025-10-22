@@ -24,6 +24,14 @@ export class SearchService {
     type: 'tracks' | 'albums' | 'artists' | 'playlists' | 'users',
     page = 1,
     limit = 20,
+    filters?: {
+      minPopularity?: number;
+      maxPopularity?: number;
+      genre?: string;
+      year?: number;
+      fromYear?: number;
+      toYear?: number;
+    },
   ): Promise<PaginatedResult<any>> {
     if (!query || query.trim().length === 0) {
       return {
@@ -43,11 +51,11 @@ export class SearchService {
 
     switch (type) {
       case 'tracks':
-        return this.searchTracks(query.trim(), skip, limit, page);
+        return this.searchTracks(query.trim(), skip, limit, page, filters);
       case 'albums':
-        return this.searchAlbums(query.trim(), skip, limit, page);
+        return this.searchAlbums(query.trim(), skip, limit, page, filters);
       case 'artists':
-        return this.searchArtists(query.trim(), skip, limit, page);
+        return this.searchArtists(query.trim(), skip, limit, page, filters);
       case 'playlists':
         return this.searchPlaylists(query.trim(), skip, limit, page);
       case 'users':
@@ -62,18 +70,40 @@ export class SearchService {
     skip: number,
     limit: number,
     page: number,
+    filters?: {
+      minPopularity?: number;
+      maxPopularity?: number;
+      genre?: string;
+      year?: number;
+      fromYear?: number;
+      toYear?: number;
+    },
   ): Promise<PaginatedResult<SearchTrackDto>> {
+    // Build the filter object
+    const filter: any = { $text: { $search: query } };
+
+    // Add popularity filter
+    if (filters?.minPopularity !== undefined || filters?.maxPopularity !== undefined) {
+      filter.popularity = {};
+      if (filters.minPopularity !== undefined) {
+        filter.popularity.$gte = filters.minPopularity;
+      }
+      if (filters.maxPopularity !== undefined) {
+        filter.popularity.$lte = filters.maxPopularity;
+      }
+    }
+
     // Utilise MongoDB text search avec score de pertinence
     const [tracks, total] = await Promise.all([
       this.trackModel
-        .find({ $text: { $search: query } }, { score: { $meta: 'textScore' } })
+        .find(filter, { score: { $meta: 'textScore' } })
         .sort({ score: { $meta: 'textScore' } })
         .skip(skip)
         .limit(limit)
-        .populate('album_id', 'name images')
+        .populate('album_id', 'name images release_date')
         .populate('artist_ids', 'name')
         .exec(),
-      this.trackModel.countDocuments({ $text: { $search: query } }).exec(),
+      this.trackModel.countDocuments(filter).exec(),
     ]);
 
     // Transform to DTOs
@@ -120,16 +150,66 @@ export class SearchService {
     skip: number,
     limit: number,
     page: number,
+    filters?: {
+      minPopularity?: number;
+      maxPopularity?: number;
+      genre?: string;
+      year?: number;
+      fromYear?: number;
+      toYear?: number;
+    },
   ): Promise<PaginatedResult<SearchAlbumDto>> {
+    // Build the filter object
+    const filter: any = { $text: { $search: query } };
+
+    // Add popularity filter
+    if (filters?.minPopularity !== undefined || filters?.maxPopularity !== undefined) {
+      filter.popularity = {};
+      if (filters.minPopularity !== undefined) {
+        filter.popularity.$gte = filters.minPopularity;
+      }
+      if (filters.maxPopularity !== undefined) {
+        filter.popularity.$lte = filters.maxPopularity;
+      }
+    }
+
+    // Add genre filter
+    if (filters?.genre) {
+      filter.genres = { $regex: filters.genre, $options: 'i' };
+    }
+
+    // Add year filters
+    if (filters?.year) {
+      filter.release_date = { $regex: `^${filters.year}` };
+    } else if (filters?.fromYear || filters?.toYear) {
+      filter.$expr = { $and: [] };
+      if (filters?.fromYear) {
+        filter.$expr.$and.push({
+          $gte: [
+            { $toInt: { $substr: ['$release_date', 0, 4] } },
+            filters.fromYear,
+          ],
+        });
+      }
+      if (filters?.toYear) {
+        filter.$expr.$and.push({
+          $lte: [
+            { $toInt: { $substr: ['$release_date', 0, 4] } },
+            filters.toYear,
+          ],
+        });
+      }
+    }
+
     const [albums, total] = await Promise.all([
       this.albumModel
-        .find({ $text: { $search: query } }, { score: { $meta: 'textScore' } })
+        .find(filter, { score: { $meta: 'textScore' } })
         .sort({ score: { $meta: 'textScore' } })
         .skip(skip)
         .limit(limit)
         .populate('artist_ids', 'name')
         .exec(),
-      this.albumModel.countDocuments({ $text: { $search: query } }).exec(),
+      this.albumModel.countDocuments(filter).exec(),
     ]);
 
     // Transform to DTOs
@@ -170,15 +250,42 @@ export class SearchService {
     skip: number,
     limit: number,
     page: number,
+    filters?: {
+      minPopularity?: number;
+      maxPopularity?: number;
+      genre?: string;
+      year?: number;
+      fromYear?: number;
+      toYear?: number;
+    },
   ): Promise<PaginatedResult<Artist>> {
+    // Build the filter object
+    const filter: any = { $text: { $search: query } };
+
+    // Add popularity filter
+    if (filters?.minPopularity !== undefined || filters?.maxPopularity !== undefined) {
+      filter.popularity = {};
+      if (filters.minPopularity !== undefined) {
+        filter.popularity.$gte = filters.minPopularity;
+      }
+      if (filters.maxPopularity !== undefined) {
+        filter.popularity.$lte = filters.maxPopularity;
+      }
+    }
+
+    // Add genre filter
+    if (filters?.genre) {
+      filter.genres = { $regex: filters.genre, $options: 'i' };
+    }
+
     const [data, total] = await Promise.all([
       this.artistModel
-        .find({ $text: { $search: query } }, { score: { $meta: 'textScore' } })
+        .find(filter, { score: { $meta: 'textScore' } })
         .sort({ score: { $meta: 'textScore' } })
         .skip(skip)
         .limit(limit)
         .exec(),
-      this.artistModel.countDocuments({ $text: { $search: query } }).exec(),
+      this.artistModel.countDocuments(filter).exec(),
     ]);
 
     const totalPages = Math.ceil(total / limit);

@@ -11,6 +11,7 @@ import {
   fetchDashboardStats,
   fetchTopArtists,
   PaginationParams,
+  SearchParams,
   playlistApi,
   userApi,
   syncAlbumTracks,
@@ -246,35 +247,35 @@ export function useSyncArtistAlbums() {
 export function useSearch(
   query: string,
   type: 'tracks',
-  params?: PaginationParams
+  params?: SearchParams
 ): UseQueryResult<PaginatedResult<SearchTrack>>;
 export function useSearch(
   query: string,
   type: 'albums',
-  params?: PaginationParams
+  params?: SearchParams
 ): UseQueryResult<PaginatedResult<SearchAlbum>>;
 export function useSearch(
   query: string,
   type: 'artists',
-  params?: PaginationParams
+  params?: SearchParams
 ): UseQueryResult<PaginatedResult<SearchArtist>>;
 export function useSearch(
   query: string,
   type: 'playlists',
-  params?: PaginationParams
+  params?: SearchParams
 ): UseQueryResult<PaginatedResult<SearchPlaylist>>;
 export function useSearch(
   query: string,
   type: 'users',
-  params?: PaginationParams
+  params?: SearchParams
 ): UseQueryResult<PaginatedResult<SearchUser>>;
 export function useSearch(
   query: string,
   type: 'tracks' | 'albums' | 'artists' | 'playlists' | 'users',
-  params?: PaginationParams
+  params?: SearchParams
 ): UseQueryResult<PaginatedResult<SearchTrack | SearchAlbum | SearchArtist | SearchPlaylist | SearchUser>> {
   return useQuery({
-    queryKey: ["search", query, type, params?.page, params?.limit],
+    queryKey: ["search", query, type, params?.page, params?.limit, params?.filters],
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     queryFn: () => search(query, type as any, params),
     enabled: !!query && query.trim().length > 0,

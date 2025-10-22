@@ -71,6 +71,7 @@ export class TracksService {
   async findByArtist(artistId: string) {
     return this.trackModel
       .find({ artist_ids: artistId })
+      .populate('album_id') // Include full album data for collaborative tracks
       .sort({ popularity: -1 }) // Most popular first
       .exec();
   }
@@ -91,16 +92,18 @@ export class TracksService {
     return result;
   }
 
-  async upsert(id: string, trackData: any) {
+  async upsert(id: string, trackData: any, options?: { skipCacheInvalidation?: boolean }) {
     const result = await this.trackModel
       .findByIdAndUpdate(id, trackData, { upsert: true, new: true })
       .exec();
-    // Invalidate only tracks cache
-    await this.invalidateTracksCache();
+    // Invalidate only tracks cache (skip si demandé pour optimiser les batch operations)
+    if (!options?.skipCacheInvalidation) {
+      await this.invalidateTracksCache();
+    }
     return result;
   }
 
-  private async invalidateTracksCache() {
+  async invalidateTracksCache() {
     // Clear the entire cache since we can't easily iterate keys
     // This is acceptable since cache is rebuilt quickly on next request
     await this.cacheManager.clear();

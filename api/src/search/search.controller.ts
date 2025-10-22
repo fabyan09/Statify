@@ -11,10 +11,26 @@ export class SearchController {
     @Query('type') type: 'tracks' | 'albums' | 'artists' | 'playlists' | 'users',
     @Query('page', new ParseIntPipe({ optional: true })) page?: number,
     @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
+    @Query('minPopularity', new ParseIntPipe({ optional: true })) minPopularity?: number,
+    @Query('maxPopularity', new ParseIntPipe({ optional: true })) maxPopularity?: number,
+    @Query('genre') genre?: string,
+    @Query('year', new ParseIntPipe({ optional: true })) year?: number,
+    @Query('fromYear', new ParseIntPipe({ optional: true })) fromYear?: number,
+    @Query('toYear', new ParseIntPipe({ optional: true })) toYear?: number,
   ) {
     if (!type) {
       throw new BadRequestException('type parameter is required');
     }
-    return this.searchService.search(query, type, page || 1, limit || 20);
+
+    const filters = {
+      minPopularity,
+      maxPopularity,
+      genre,
+      year,
+      fromYear,
+      toYear,
+    };
+
+    return this.searchService.search(query, type, page || 1, limit || 20, filters);
   }
 }

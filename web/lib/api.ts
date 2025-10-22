@@ -143,42 +143,77 @@ export async function fetchTopArtists(limit = 10): Promise<TopArtist[]> {
 // Search API
 type SearchResultType = SearchTrack | SearchAlbum | SearchArtist | SearchPlaylist | SearchUser;
 
+export interface SearchFilters {
+  minPopularity?: number;
+  maxPopularity?: number;
+  genre?: string;
+  year?: number;
+  fromYear?: number;
+  toYear?: number;
+}
+
+export interface SearchParams extends PaginationParams {
+  filters?: SearchFilters;
+}
+
 // Function overloads for type-safe search
 export async function search(
   query: string,
   type: 'tracks',
-  params?: PaginationParams
+  params?: SearchParams
 ): Promise<PaginatedResult<SearchTrack>>;
 export async function search(
   query: string,
   type: 'albums',
-  params?: PaginationParams
+  params?: SearchParams
 ): Promise<PaginatedResult<SearchAlbum>>;
 export async function search(
   query: string,
   type: 'artists',
-  params?: PaginationParams
+  params?: SearchParams
 ): Promise<PaginatedResult<SearchArtist>>;
 export async function search(
   query: string,
   type: 'playlists',
-  params?: PaginationParams
+  params?: SearchParams
 ): Promise<PaginatedResult<SearchPlaylist>>;
 export async function search(
   query: string,
   type: 'users',
-  params?: PaginationParams
+  params?: SearchParams
 ): Promise<PaginatedResult<SearchUser>>;
 export async function search(
   query: string,
   type: 'tracks' | 'albums' | 'artists' | 'playlists' | 'users',
-  params?: PaginationParams
+  params?: SearchParams
 ): Promise<PaginatedResult<SearchResultType>> {
   const searchParams = new URLSearchParams();
   searchParams.set('q', query);
   searchParams.set('type', type);
   if (params?.page) searchParams.set('page', params.page.toString());
   if (params?.limit) searchParams.set('limit', params.limit.toString());
+
+  // Add filters to search params
+  if (params?.filters) {
+    if (params.filters.minPopularity !== undefined) {
+      searchParams.set('minPopularity', params.filters.minPopularity.toString());
+    }
+    if (params.filters.maxPopularity !== undefined) {
+      searchParams.set('maxPopularity', params.filters.maxPopularity.toString());
+    }
+    if (params.filters.genre) {
+      searchParams.set('genre', params.filters.genre);
+    }
+    if (params.filters.year) {
+      searchParams.set('year', params.filters.year.toString());
+    }
+    if (params.filters.fromYear) {
+      searchParams.set('fromYear', params.filters.fromYear.toString());
+    }
+    if (params.filters.toYear) {
+      searchParams.set('toYear', params.filters.toYear.toString());
+    }
+  }
 
   const response = await fetch(`${API_BASE_URL}/search?${searchParams.toString()}`, {
     cache: 'no-store',
@@ -193,6 +228,20 @@ export async function fetchArtistAlbums(artistId: string): Promise<Album[]> {
     cache: 'no-store',
   });
   if (!response.ok) throw new Error("Failed to fetch artist albums");
+  return response.json();
+}
+
+export async function fetchAlbumsByIds(ids: string[]): Promise<Album[]> {
+  if (ids.length === 0) return [];
+  const response = await fetch(`${API_BASE_URL}/albums/by-ids`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ ids }),
+    cache: 'no-store',
+  });
+  if (!response.ok) throw new Error("Failed to fetch albums by IDs");
   return response.json();
 }
 

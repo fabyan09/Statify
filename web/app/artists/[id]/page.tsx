@@ -325,7 +325,13 @@ export default function ArtistDetailPage() {
                 </TableHeader>
                 <TableBody>
                   {artistTracks.slice(0, 20).map((track) => {
-                    const album = albumMap.get(track.album_id);
+                    // Handle both populated album (Album object) and string reference
+                    const album = typeof track.album_id === 'string'
+                      ? albumMap.get(track.album_id)
+                      : track.album_id;
+                    const albumId = typeof track.album_id === 'string'
+                      ? track.album_id
+                      : track.album_id._id;
 
                     return (
                       <TableRow key={track._id}>
@@ -356,7 +362,7 @@ export default function ArtistDetailPage() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Link href={`/albums/${track.album_id}`}>
+                          <Link href={`/albums/${albumId}`}>
                             <span
                               className="text-sm text-muted-foreground hover:text-primary hover:underline cursor-pointer block truncate"
                               title={album?.name || "Unknown Album"}

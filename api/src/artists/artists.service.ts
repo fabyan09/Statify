@@ -8,6 +8,7 @@ import { UpdateArtistDto } from './dto/update-artist.dto';
 import { Artist, ArtistDocument } from './entities/artist.entity';
 import { SpotifyService } from '../spotify/spotify.service';
 import { AlbumsService } from '../albums/albums.service';
+import { TracksService } from '../tracks/tracks.service';
 
 @Injectable()
 export class ArtistsService {
@@ -17,6 +18,8 @@ export class ArtistsService {
     private spotifyService: SpotifyService,
     @Inject(forwardRef(() => AlbumsService))
     private albumsService: AlbumsService,
+    @Inject(forwardRef(() => TracksService))
+    private tracksService: TracksService,
   ) {}
 
   async create(createArtistDto: CreateArtistDto) {
@@ -111,56 +114,67 @@ export class ArtistsService {
       const completeAlbumsData: any[] = await this.spotifyService.getAlbums(albumIds);
       console.log(`[ARTIST-SYNC] Received complete info for ${completeAlbumsData.length} albums`);
 
-      // 5. Upsert les albums en base de données et sync leurs tracks
+      // 5. Upsert les albums en base de données et sync leurs tracks (EN PARALLÈLE PAR BATCH)
       const createdAlbumIds: string[] = [];
       let totalTracksSynced = 0;
 
-      // Fonction helper pour attendre
-      const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+      // Traiter les albums par batch de 5 en parallèle pour optimiser la performance
+      const BATCH_SIZE = 5;
+      console.log(`[ARTIST-SYNC] Processing ${completeAlbumsData.length} albums in batches of ${BATCH_SIZE}...`);
 
-      // Traiter les albums un par un pour éviter le rate limiting Spotify
-      for (let i = 0; i < completeAlbumsData.length; i++) {
-        const spotifyAlbum = completeAlbumsData[i];
-        try {
-          console.log(`[ARTIST-SYNC] Processing album ${i + 1}/${completeAlbumsData.length}: ${spotifyAlbum.name}`);
+      for (let i = 0; i < completeAlbumsData.length; i += BATCH_SIZE) {
+        const batch = completeAlbumsData.slice(i, i + BATCH_SIZE);
+        const batchNumber = Math.floor(i / BATCH_SIZE) + 1;
+        const totalBatches = Math.ceil(completeAlbumsData.length / BATCH_SIZE);
 
-          // Upsert l'album avec les informations de Spotify
-          const albumData = {
-            name: spotifyAlbum.name,
-            album_type: spotifyAlbum.album_type,
-            total_tracks: spotifyAlbum.total_tracks,
-            release_date: spotifyAlbum.release_date,
-            release_date_precision: spotifyAlbum.release_date_precision,
-            popularity: spotifyAlbum.popularity,
-            href: spotifyAlbum.href,
-            uri: spotifyAlbum.uri,
-            external_urls: spotifyAlbum.external_urls,
-            images: spotifyAlbum.images,
-            label: spotifyAlbum.label,
-            artist_ids: spotifyAlbum.artists.map(artist => artist.id),
-            genres: spotifyAlbum.genres || [],
-            track_ids: [], // Will be filled by syncTracksFromSpotify
-            spotify_synced: false, // Will be set to true by syncTracksFromSpotify
-          };
+        console.log(`[ARTIST-SYNC] Processing batch ${batchNumber}/${totalBatches} (${batch.length} albums)`);
 
-          const upsertedAlbum = await this.albumsService.upsert(spotifyAlbum.id, albumData);
-          createdAlbumIds.push(upsertedAlbum._id);
+        // Traiter tous les albums du batch en parallèle
+        const batchPromises = batch.map(async (spotifyAlbum) => {
+          try {
+            // Upsert l'album avec les informations de Spotify (skip cache invalidation pour optimiser)
+            const albumData = {
+              name: spotifyAlbum.name,
+              album_type: spotifyAlbum.album_type,
+              total_tracks: spotifyAlbum.total_tracks,
+              release_date: spotifyAlbum.release_date,
+              release_date_precision: spotifyAlbum.release_date_precision,
+              popularity: spotifyAlbum.popularity,
+              href: spotifyAlbum.href,
+              uri: spotifyAlbum.uri,
+              external_urls: spotifyAlbum.external_urls,
+              images: spotifyAlbum.images,
+              label: spotifyAlbum.label,
+              artist_ids: spotifyAlbum.artists.map(artist => artist.id),
+              genres: spotifyAlbum.genres || [],
+              track_ids: [], // Will be filled by syncTracksFromSpotify
+              spotify_synced: false, // Will be set to true by syncTracksFromSpotify
+            };
 
-          // Synchroniser les tracks de l'album
-          console.log(`[ARTIST-SYNC] Syncing tracks for album: ${spotifyAlbum.name}`);
-          const syncResult = await this.albumsService.syncTracksFromSpotify(spotifyAlbum.id);
+            const upsertedAlbum = await this.albumsService.upsert(spotifyAlbum.id, albumData, { skipCacheInvalidation: true });
 
-          if (syncResult.syncedTracks) {
-            totalTracksSynced += syncResult.syncedTracks;
+            // Synchroniser les tracks de l'album
+            const syncResult = await this.albumsService.syncTracksFromSpotify(spotifyAlbum.id);
+
+            return {
+              albumId: upsertedAlbum._id,
+              tracksSynced: syncResult.syncedTracks || 0,
+            };
+          } catch (error) {
+            console.error(`[ARTIST-SYNC] Failed to process album ${spotifyAlbum.id}:`, error.message);
+            return null;
           }
+        });
 
-          // Attendre un peu entre chaque album pour éviter le rate limiting (sauf pour le dernier)
-          if (i < completeAlbumsData.length - 1) {
-            await delay(200); // 200ms entre chaque album (réduit pour éviter MongoDB timeout)
+        // Attendre que tous les albums du batch soient traités
+        const batchResults = await Promise.all(batchPromises);
+
+        // Collecter les résultats
+        for (const result of batchResults) {
+          if (result) {
+            createdAlbumIds.push(result.albumId);
+            totalTracksSynced += result.tracksSynced;
           }
-        } catch (error) {
-          console.error(`Failed to upsert album ${spotifyAlbum.id}:`, error.message);
-          // Continuer avec les autres albums même si un échoue
         }
       }
 
@@ -176,8 +190,13 @@ export class ArtistsService {
         )
         .exec();
 
-      // Invalidate cache
-      await this.invalidateArtistsCache();
+      // 7. Invalider tous les caches une seule fois à la fin (optimisation)
+      console.log(`[ARTIST-SYNC] Invalidating caches...`);
+      await Promise.all([
+        this.invalidateArtistsCache(),
+        this.albumsService.invalidateAlbumsCache(),
+        this.tracksService.invalidateTracksCache(),
+      ]);
 
       console.log(`[ARTIST-SYNC] Sync completed! ${createdAlbumIds.length} albums and ${totalTracksSynced} tracks synced`);
 

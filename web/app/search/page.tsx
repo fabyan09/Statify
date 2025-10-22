@@ -20,11 +20,14 @@ import {
   useUserPlaylists,
 } from "@/lib/hooks";
 import { useAuth } from "@/contexts/auth-context";
-import { ExternalLink, Search, Heart, Plus, Users, Music, Disc, User, ListMusic } from "lucide-react";
+import { ExternalLink, Search, Heart, Plus, Users, Music, Disc, User, ListMusic, Filter, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { Pagination } from "@/components/pagination";
 import { useDebounce } from "@/lib/useDebounce";
+import { SearchFilters } from "@/lib/api";
+import { Slider } from "@/components/ui/slider";
+import { Label } from "@/components/ui/label";
 
 export default function SearchPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -37,15 +40,19 @@ export default function SearchPage() {
   const [playlistsPage, setPlaylistsPage] = useState(1);
   const [usersPage, setUsersPage] = useState(1);
 
+  // Filters state
+  const [filters, setFilters] = useState<SearchFilters>({});
+  const [showFilters, setShowFilters] = useState(false);
+
   const limit = 20;
 
   // Debounce search term to avoid excessive API calls
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
   // Search queries for each type
-  const { data: tracksResult, isLoading: tracksLoading } = useSearch(debouncedSearchTerm, 'tracks', { page: tracksPage, limit });
-  const { data: albumsResult, isLoading: albumsLoading } = useSearch(debouncedSearchTerm, 'albums', { page: albumsPage, limit });
-  const { data: artistsResult, isLoading: artistsLoading } = useSearch(debouncedSearchTerm, 'artists', { page: artistsPage, limit });
+  const { data: tracksResult, isLoading: tracksLoading } = useSearch(debouncedSearchTerm, 'tracks', { page: tracksPage, limit, filters });
+  const { data: albumsResult, isLoading: albumsLoading } = useSearch(debouncedSearchTerm, 'albums', { page: albumsPage, limit, filters });
+  const { data: artistsResult, isLoading: artistsLoading } = useSearch(debouncedSearchTerm, 'artists', { page: artistsPage, limit, filters });
   const { data: playlistsResult, isLoading: playlistsLoading } = useSearch(debouncedSearchTerm, 'playlists', { page: playlistsPage, limit });
   const { data: usersResult, isLoading: usersLoading } = useSearch(debouncedSearchTerm, 'users', { page: usersPage, limit });
 
@@ -171,6 +178,120 @@ export default function SearchPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Filters Toggle Button */}
+        <div className="flex justify-end">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowFilters(!showFilters)}
+            className="flex items-center gap-2"
+          >
+            <Filter className="h-4 w-4" />
+            {showFilters ? "Hide Filters" : "Show Filters"}
+            {Object.keys(filters).length > 0 && (
+              <Badge variant="secondary" className="ml-1">
+                {Object.keys(filters).filter(k => filters[k as keyof SearchFilters] !== undefined && filters[k as keyof SearchFilters] !== '').length}
+              </Badge>
+            )}
+          </Button>
+        </div>
+
+        {/* Filters Panel */}
+        {showFilters && (
+          <Card className="!bg-background/10">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg">Filters</CardTitle>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setFilters({})}
+                  disabled={Object.keys(filters).length === 0}
+                >
+                  <X className="h-4 w-4 mr-1" />
+                  Clear All
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Popularity Filter */}
+              {(activeTab === 'tracks' || activeTab === 'albums' || activeTab === 'artists') && (
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium">Popularity</Label>
+                  <div className="flex items-center gap-4">
+                    <div className="flex-1">
+                      <Label className="text-xs text-muted-foreground mb-2">Min: {filters.minPopularity ?? 0}</Label>
+                      <Slider
+                        value={[filters.minPopularity ?? 0]}
+                        min={0}
+                        max={100}
+                        step={5}
+                        onValueChange={(value) => setFilters({ ...filters, minPopularity: value[0] })}
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <Label className="text-xs text-muted-foreground mb-2">Max: {filters.maxPopularity ?? 100}</Label>
+                      <Slider
+                        value={[filters.maxPopularity ?? 100]}
+                        min={0}
+                        max={100}
+                        step={5}
+                        onValueChange={(value) => setFilters({ ...filters, maxPopularity: value[0] })}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Genre Filter */}
+              {(activeTab === 'albums' || activeTab === 'artists') && (
+                <div className="space-y-2">
+                  <Label htmlFor="genre" className="text-sm font-medium">Genre</Label>
+                  <Input
+                    id="genre"
+                    placeholder="e.g. rap, rock, pop..."
+                    value={filters.genre ?? ''}
+                    onChange={(e) => setFilters({ ...filters, genre: e.target.value || undefined })}
+                  />
+                </div>
+              )}
+
+              {/* Year Filters */}
+              {activeTab === 'albums' && (
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium">Release Year</Label>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="fromYear" className="text-xs text-muted-foreground">From</Label>
+                      <Input
+                        id="fromYear"
+                        type="number"
+                        placeholder="1950"
+                        min={1950}
+                        max={new Date().getFullYear()}
+                        value={filters.fromYear ?? ''}
+                        onChange={(e) => setFilters({ ...filters, fromYear: e.target.value ? parseInt(e.target.value) : undefined })}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="toYear" className="text-xs text-muted-foreground">To</Label>
+                      <Input
+                        id="toYear"
+                        type="number"
+                        placeholder={new Date().getFullYear().toString()}
+                        min={1950}
+                        max={new Date().getFullYear()}
+                        value={filters.toYear ?? ''}
+                        onChange={(e) => setFilters({ ...filters, toYear: e.target.value ? parseInt(e.target.value) : undefined })}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Tabs */}
