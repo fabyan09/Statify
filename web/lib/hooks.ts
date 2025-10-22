@@ -19,6 +19,7 @@ import {
   search,
   PaginatedResult,
   fetchRecommendations,
+  fetchCollaborations,
 } from "./api";
 import { SearchTrack, SearchAlbum, SearchArtist, SearchPlaylist, SearchUser } from "./types";
 
@@ -289,5 +290,13 @@ export function useRecommendations(userId: string) {
     queryFn: () => fetchRecommendations(userId),
     enabled: !!userId,
     staleTime: 60 * 60 * 1000, // 1 heure - correspond au cache côté serveur
+  });
+}
+
+export function useCollaborations(minCount: number = 1) {
+  return useQuery({
+    queryKey: ["collaborations", minCount],
+    queryFn: () => fetchCollaborations(minCount),
+    staleTime: 5 * 60 * 1000, // 5 minutes - les collaborations changent rarement
   });
 }

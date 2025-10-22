@@ -290,20 +290,6 @@ export async function fetchLabelStats(): Promise<LabelStats[]> {
   return response.json();
 }
 
-export interface Collaboration {
-  artist1: string;
-  artist2: string;
-  count: number;
-}
-
-export async function fetchCollaborations(): Promise<Collaboration[]> {
-  const response = await fetch(`${API_BASE_URL}/stats/collaborations`, {
-    cache: 'no-store',
-  });
-  if (!response.ok) throw new Error("Failed to fetch collaborations");
-  return response.json();
-}
-
 // User API
 export interface User {
   _id: string;
@@ -526,3 +512,37 @@ export const playlistApi = {
     return res.json();
   },
 };
+
+// Collaborations API
+export interface Collaboration {
+  artist1: string;
+  artist2: string;
+  count: number;
+}
+
+export interface CollaborationNode {
+  id: string;
+  name: string;
+  image?: string;
+  popularity: number;
+  followers: number;
+  genres: string[];
+}
+
+export interface CollaborationsResponse {
+  collaborations: Collaboration[];
+  nodes: CollaborationNode[];
+  stats: {
+    totalCollaborations: number;
+    collaborativeTracks: number;
+    artistsWithCollabs: number;
+  };
+}
+
+export async function fetchCollaborations(minCount: number = 1): Promise<CollaborationsResponse> {
+  const response = await fetch(`${API_BASE_URL}/collaborations?minCount=${minCount}`, {
+    cache: 'no-store',
+  });
+  if (!response.ok) throw new Error("Failed to fetch collaborations");
+  return response.json();
+}

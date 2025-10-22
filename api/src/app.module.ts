@@ -12,6 +12,7 @@ import { UsersModule } from './users/users.module';
 import { PlaylistsModule } from './playlists/playlists.module';
 import { SearchModule } from './search/search.module';
 import { RecommendationsModule } from './recommendations/recommendations.module';
+import { CollaborationsModule } from './collaborations/collaborations.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { RecommendationsModule } from './recommendations/recommendations.module'
     PlaylistsModule,
     SearchModule,
     RecommendationsModule,
+    CollaborationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

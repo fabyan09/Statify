@@ -2,8 +2,8 @@
 
 import { useState, useRef, useMemo, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Artist } from "@/lib/types";
-import { useArtists, useTracks } from "@/lib/hooks";
+import { useCollaborations } from "@/lib/hooks";
+import { CollaborationNode } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import NextImage from "next/image";
 import dynamic from "next/dynamic";
@@ -15,21 +15,6 @@ const ForceGraph2D = dynamic(() => import("react-force-graph-2d"), {
   ssr: false,
 });
 
-interface Collaboration {
-  artist1: string;
-  artist2: string;
-  count: number;
-}
-
-interface GraphNode {
-  id: string;
-  name: string;
-  image?: string;
-  popularity: number;
-  followers: number;
-  genres: string[];
-}
-
 interface GraphLink {
   source: string;
   target: string;
@@ -37,14 +22,7 @@ interface GraphLink {
 }
 
 export default function CollabNetworkPage() {
-  const { data: artists, isLoading: artistsLoading, error: artistsError } = useArtists();
-  const { data: tracksResult, isLoading: tracksLoading, error: tracksError } = useTracks({ limit: 1000 });
-
-  const isLoading = artistsLoading || tracksLoading;
-  const error = artistsError || tracksError;
-  const tracks = tracksResult?.data || [];
-
-  const [selectedArtist, setSelectedArtist] = useState<Artist | null>(null);
+  const [selectedArtist, setSelectedArtist] = useState<CollaborationNode | null>(null);
   const [highlightedNode, setHighlightedNode] = useState<string | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const graphRef = useRef<any>(null);
@@ -57,70 +35,32 @@ export default function CollabNetworkPage() {
   const [chargeStrength, setChargeStrength] = useState(-500);
   const [minCollabCount, setMinCollabCount] = useState(1);
 
-  // Calculate collaborations
-  const { collaborations, topCollabs } = useMemo(() => {
-    if (!tracks) return { collaborations: [], topCollabs: [] };
+  // Fetch collaborations from backend
+  const { data: collabData, isLoading, error } = useCollaborations(minCollabCount);
 
-    const collabMap = new Map<string, number>();
+  const collaborations = collabData?.collaborations || [];
+  const nodes = collabData?.nodes || [];
+  const stats = collabData?.stats || {
+    totalCollaborations: 0,
+    collaborativeTracks: 0,
+    artistsWithCollabs: 0,
+  };
 
-    tracks.forEach((track) => {
-      if (track.artist_ids.length > 1) {
-        // Multiple artists = collaboration
-        for (let i = 0; i < track.artist_ids.length; i++) {
-          for (let j = i + 1; j < track.artist_ids.length; j++) {
-            const key = [track.artist_ids[i], track.artist_ids[j]]
-              .sort()
-              .join("-");
-            collabMap.set(key, (collabMap.get(key) || 0) + 1);
-          }
-        }
-      }
-    });
-
-    const collaborations: Collaboration[] = Array.from(collabMap.entries())
-      .map(([key, count]) => {
-        const [artist1, artist2] = key.split("-");
-        return { artist1, artist2, count };
-      })
-      .filter((collab) => collab.count >= minCollabCount);
-
-    const topCollabs = [...collaborations]
+  // Top collaborations
+  const topCollabs = useMemo(() => {
+    return [...collaborations]
       .sort((a, b) => b.count - a.count)
       .slice(0, 10);
-
-    return { collaborations, topCollabs };
-  }, [tracks, minCollabCount]);
+  }, [collaborations]);
 
   // Build graph data
   const graphData = useMemo(() => {
-    if (!artists) return { nodes: [], links: [] };
+    if (!nodes || nodes.length === 0) return { nodes: [], links: [] };
 
-    const artistMap = new Map(artists.map((a) => [a._id, a]));
+    // Limit nodes by maxNodes setting
+    const limitedNodes = nodes.slice(0, maxNodes);
 
-    // Get artists involved in collaborations
-    const collabArtistIds = new Set<string>();
-    collaborations.forEach(({ artist1, artist2 }) => {
-      collabArtistIds.add(artist1);
-      collabArtistIds.add(artist2);
-    });
-
-    const nodes = Array.from(collabArtistIds)
-      .map((id) => {
-        const artist = artistMap.get(id);
-        if (!artist) return null;
-        return {
-          id: artist._id,
-          name: artist.name,
-          image: artist.images[0]?.url,
-          popularity: artist.popularity,
-          followers: artist.followers,
-          genres: artist.genres,
-        } as GraphNode;
-      })
-      .filter((n): n is GraphNode => n !== null)
-      .slice(0, maxNodes);
-
-    const nodeIds = new Set(nodes.map((n) => n.id));
+    const nodeIds = new Set(limitedNodes.map((n) => n.id));
     const links: GraphLink[] = collaborations
       .filter(
         ({ artist1, artist2 }) =>
@@ -132,22 +72,21 @@ export default function CollabNetworkPage() {
         value: count,
       }));
 
-    return { nodes, links };
-  }, [artists, collaborations, maxNodes]);
+    return { nodes: limitedNodes, links };
+  }, [nodes, collaborations, maxNodes]);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleNodeClick = (node: any) => {
-    if (!artists) return;
-    const artist = artists.find((a) => a._id === node.id);
+    const artist = nodes.find((a) => a.id === node.id);
     if (artist) {
       setSelectedArtist(artist);
       setHighlightedNode(node.id === highlightedNode ? null : node.id);
     }
   };
 
-  const handleArtistSelect = (artist: Artist) => {
+  const handleArtistSelect = (artist: CollaborationNode) => {
     setSelectedArtist(artist);
-    setHighlightedNode(artist._id);
+    setHighlightedNode(artist.id);
   };
 
   // Center graph on load and configure forces
@@ -186,7 +125,7 @@ export default function CollabNetworkPage() {
     );
   }
 
-  if (isLoading || !artists || !tracks) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-[50vh]">
         <div className="text-center space-y-4">
@@ -228,7 +167,7 @@ export default function CollabNetworkPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {tracks.filter((t) => t.artist_ids.length > 1).length}
+              {stats.collaborativeTracks}
             </div>
           </CardContent>
         </Card>
@@ -446,9 +385,9 @@ export default function CollabNetworkPage() {
               <div className="space-y-4">
                 <div className="flex flex-col items-center gap-3">
                   <div className="relative h-32 w-32 rounded-full overflow-hidden bg-muted">
-                    {selectedArtist.images[0]?.url ? (
+                    {selectedArtist.image ? (
                       <NextImage
-                        src={selectedArtist.images[0].url}
+                        src={selectedArtist.image}
                         alt={selectedArtist.name}
                         fill
                         className="object-cover"
@@ -492,30 +431,19 @@ export default function CollabNetworkPage() {
                   </div>
                 )}
 
-                {selectedArtist.external_urls?.spotify && (
-                  <a
-                    href={selectedArtist.external_urls.spotify}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block w-full text-center px-4 py-2 bg-[#1DB954] text-white rounded-md hover:bg-[#1ed760] transition-colors font-medium text-sm"
-                  >
-                    Open in Spotify
-                  </a>
-                )}
-
                 {/* Collaborators List */}
                 {(() => {
                   const artistCollabs = collaborations
                     .filter(
                       (c) =>
-                        c.artist1 === selectedArtist._id ||
-                        c.artist2 === selectedArtist._id
+                        c.artist1 === selectedArtist.id ||
+                        c.artist2 === selectedArtist.id
                     )
                     .map((c) => {
                       const collabId =
-                        c.artist1 === selectedArtist._id ? c.artist2 : c.artist1;
+                        c.artist1 === selectedArtist.id ? c.artist2 : c.artist1;
                       return {
-                        artist: artists.find((a) => a._id === collabId),
+                        artist: nodes.find((a) => a.id === collabId),
                         count: c.count,
                       };
                     })
@@ -534,14 +462,14 @@ export default function CollabNetworkPage() {
                           if (!artist) return null;
                           return (
                             <div
-                              key={artist._id}
+                              key={artist.id}
                               onClick={() => handleArtistSelect(artist)}
                               className="flex items-center gap-2 p-2 rounded-md hover:bg-muted/50 transition-colors cursor-pointer"
                             >
                               <div className="relative h-8 w-8 rounded-full overflow-hidden bg-muted flex-shrink-0">
-                                {artist.images[0]?.url && (
+                                {artist.image && (
                                   <NextImage
-                                    src={artist.images[0].url}
+                                    src={artist.image}
                                     alt={artist.name}
                                     fill
                                     className="object-cover"
@@ -584,8 +512,8 @@ export default function CollabNetworkPage() {
         <CardContent>
           <div className="space-y-3">
             {topCollabs.map((collab, index) => {
-              const artist1 = artists.find((a) => a._id === collab.artist1);
-              const artist2 = artists.find((a) => a._id === collab.artist2);
+              const artist1 = nodes.find((a) => a.id === collab.artist1);
+              const artist2 = nodes.find((a) => a.id === collab.artist2);
 
               if (!artist1 || !artist2) return null;
 
@@ -600,9 +528,9 @@ export default function CollabNetworkPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="relative h-10 w-10 rounded-full overflow-hidden bg-muted">
-                        {artist1.images[0]?.url && (
+                        {artist1.image && (
                           <NextImage
-                            src={artist1.images[0].url}
+                            src={artist1.image}
                             alt={artist1.name}
                             fill
                             className="object-cover"
@@ -612,9 +540,9 @@ export default function CollabNetworkPage() {
                       <span className="font-semibold">{artist1.name}</span>
                       <span className="text-muted-foreground">×</span>
                       <div className="relative h-10 w-10 rounded-full overflow-hidden bg-muted">
-                        {artist2.images[0]?.url && (
+                        {artist2.image && (
                           <NextImage
-                            src={artist2.images[0].url}
+                            src={artist2.image}
                             alt={artist2.name}
                             fill
                             className="object-cover"
