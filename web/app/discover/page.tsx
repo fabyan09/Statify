@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { useRecommendations, useAddToLibrary, useRemoveFromLibrary, useUser } from "@/lib/hooks";
@@ -61,6 +61,8 @@ export default function DiscoverPage() {
   const { data: user, isLoading: userLoading } = useUser(currentUser?._id || "");
   const { data: recommendationsData, isLoading: recommendationsLoading } = useRecommendations(currentUser?._id || "");
 
+  const [activeSection, setActiveSection] = useState(0);
+
   const addToLibrary = useAddToLibrary();
   const removeFromLibrary = useRemoveFromLibrary();
 
@@ -69,6 +71,51 @@ export default function DiscoverPage() {
       router.push("/auth");
     }
   }, [currentUser, authLoading, router]);
+
+  // Track active section on scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      const sections = document.querySelectorAll('[id^="section-"]');
+      let maxVisibleArea = 0;
+      let currentSection = 0;
+      let fullyVisibleSection = -1;
+
+      sections.forEach((section, index) => {
+        const rect = section.getBoundingClientRect();
+        const viewportHeight = window.innerHeight;
+        const sectionHeight = rect.height;
+
+        // Calculate how much of this section is visible
+        const visibleTop = Math.max(0, rect.top);
+        const visibleBottom = Math.min(viewportHeight, rect.bottom);
+        const visibleHeight = Math.max(0, visibleBottom - visibleTop);
+
+        // Calculate visible area (visible height as percentage of viewport)
+        const visibleArea = visibleHeight / viewportHeight;
+
+        // Check if section is 100% visible (entire section fits in viewport)
+        const isFullyVisible = rect.top >= 0 && rect.bottom <= viewportHeight;
+
+        // Priority: If a section is 100% visible, prefer it
+        if (isFullyVisible) {
+          fullyVisibleSection = index;
+        }
+
+        // Otherwise, track section with most visible area
+        if (visibleArea > maxVisibleArea) {
+          maxVisibleArea = visibleArea;
+          currentSection = index;
+        }
+      });
+
+      // If we found a fully visible section, use it. Otherwise use the one with most visible area
+      setActiveSection(fullyVisibleSection >= 0 ? fullyVisibleSection : currentSection);
+    };
+
+    handleScroll(); // Run on mount
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const handleToggleLike = async (itemId: string, itemType: 'track' | 'album' | 'artist') => {
     if (!currentUser) return;
@@ -111,7 +158,7 @@ export default function DiscoverPage() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <Music className="w-12 h-12 animate-spin mx-auto mb-4 text-purple-500" />
+          <Music className="w-12 h-12 animate-spin mx-auto mb-4 text-green-500" />
           <p className="text-gray-400">Chargement...</p>
         </div>
       </div>
@@ -126,7 +173,7 @@ export default function DiscoverPage() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <Sparkles className="w-12 h-12 animate-pulse mx-auto mb-4 text-purple-500" />
+          <Sparkles className="w-12 h-12 animate-pulse mx-auto mb-4 text-green-500" />
           <p className="text-gray-400">Analyse de vos goûts musicaux...</p>
         </div>
       </div>
@@ -135,18 +182,63 @@ export default function DiscoverPage() {
 
   const recommendations = recommendationsData?.sections || [];
 
+  const scrollToSection = (index: number) => {
+    const element = document.getElementById(`section-${index}`);
+    if (element) {
+      const offset = 100; // Offset for sticky header
+      const elementPosition = element.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - offset;
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen pb-12">
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
-          <Sparkles className="w-8 h-8 text-purple-500" />
+          <Sparkles className="w-8 h-8 text-green-500" />
           <h1 className="text-4xl font-bold">Découvrir</h1>
         </div>
         <p className="text-gray-400">
           Recommandations personnalisées basées sur vos goûts musicaux
         </p>
       </div>
+
+      {/* Floating Navigation Menu */}
+      {recommendations.length > 0 && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-1rem)] sm:w-auto sm:max-w-4xl">
+          <div className="bg-background/95 backdrop-blur-md border border-border rounded-full shadow-lg px-2 sm:px-4 py-1.5 sm:py-2">
+            <div className="flex items-center justify-center gap-1 sm:gap-1.5 flex-wrap max-h-[120px] overflow-y-auto scrollbar-hide">
+              {recommendations.map((section, idx) => {
+                const IconComponent = iconMap[section.icon] || Sparkles;
+                const isActive = activeSection === idx;
+                return (
+                  <Button
+                    key={idx}
+                    variant={isActive ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => scrollToSection(idx)}
+                    className="flex items-center gap-1 sm:gap-1.5 whitespace-nowrap flex-shrink-0 rounded-full h-8 sm:h-9 px-2 sm:px-3 text-xs sm:text-sm"
+                  >
+                    <IconComponent className="w-3 h-3 sm:w-3.5 sm:h-3.5 flex-shrink-0" />
+                    <span className="hidden md:inline max-w-[120px] truncate">{section.title}</span>
+                    {section.items.length > 0 && (
+                      <Badge variant="secondary" className="text-[9px] sm:text-[10px] px-1 sm:px-1.5 py-0 h-3.5 sm:h-4 flex-shrink-0">
+                        {section.items.length}
+                      </Badge>
+                    )}
+                  </Button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Sections de recommandations */}
       {recommendations.length === 0 ? (
@@ -168,9 +260,9 @@ export default function DiscoverPage() {
             const IconComponent = iconMap[section.icon] || Sparkles;
 
             return (
-              <div key={idx}>
+              <div key={idx} id={`section-${idx}`} className="scroll-mt-24">
                 <div className="flex items-center gap-3 mb-4">
-                  <IconComponent className="w-6 h-6 text-purple-500" />
+                  <IconComponent className="w-6 h-6 text-green-500" />
                   <div>
                     <h2 className="text-2xl font-bold">{section.title}</h2>
                     <p className="text-sm text-gray-400">{section.description}</p>
@@ -194,7 +286,7 @@ export default function DiscoverPage() {
                                   className="object-cover"
                                 />
                               ) : (
-                                <div className="w-full h-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                                <div className="w-full h-full bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center">
                                   <Music className="w-12 h-12 text-white" />
                                 </div>
                               )}
@@ -253,7 +345,7 @@ export default function DiscoverPage() {
                                   className="object-cover"
                                 />
                               ) : (
-                                <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center">
+                                <div className="w-full h-full bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center">
                                   <Music className="w-12 h-12 text-white" />
                                 </div>
                               )}
@@ -297,61 +389,53 @@ export default function DiscoverPage() {
 
                 {/* TRACKS */}
                 {section.type === 'track' && (
-                  <div className="space-y-2">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                     {section.items.map((item) => {
                       const track = item as Track;
                       const album = typeof track.album_id === 'object' ? track.album_id : null;
 
                       return (
-                        <Card key={track._id} className="!bg-background/10 hover:border-green-500 hover:shadow-md transition-all duration-300">
-                          <CardContent className="p-4">
-                            <div className="flex items-center gap-4">
-                              <div className="relative w-16 h-16 rounded overflow-hidden flex-shrink-0">
-                                {album?.images?.[0]?.url ? (
-                                  <Image
-                                    src={album.images[0].url}
-                                    alt={album.name}
-                                    fill
-                                    className="object-cover"
-                                  />
-                                ) : (
-                                  <div className="w-full h-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                                    <Music className="w-6 h-6 text-white" />
-                                  </div>
+                        <Card key={track._id} className="!bg-background/10 hover:border-green-500 transition-all duration-200 overflow-hidden">
+                          <div className="flex items-center gap-2 p-1">
+                            <div className="relative w-14 h-14 rounded overflow-hidden flex-shrink-0">
+                              {album?.images?.[0]?.url ? (
+                                <Image
+                                  src={album.images[0].url}
+                                  alt={album.name}
+                                  fill
+                                  className="object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center">
+                                  <Music className="w-6 h-6 text-white" />
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <h3 className="font-semibold line-clamp-1 text-base">{track.name}</h3>
+                                {track.explicit && (
+                                  <Badge variant="secondary" className="text-[10px] py-0 px-1 h-4">E</Badge>
                                 )}
                               </div>
-
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <h3 className="font-semibold line-clamp-1">{track.name}</h3>
-                                  {track.explicit && (
-                                    <Badge variant="secondary" className="text-xs">E</Badge>
-                                  )}
-                                </div>
-                              </div>
-
-                              <div className="flex items-center gap-3 flex-shrink-0">
-                                <span className="text-sm text-gray-400">
+                              <div className="flex items-center gap-2 mt-1">
+                                <Badge variant="outline" className="text-[11px] py-0 px-2 h-5">{track.popularity}</Badge>
+                                <span className="text-xs text-gray-400">
                                   {formatDuration(track.duration_ms)}
                                 </span>
-                                <Badge variant="outline">{track.popularity}</Badge>
-                                <Button
-                                  size="sm"
-                                  variant={isLiked(track._id, 'track') ? "default" : "outline"}
-                                  onClick={() => handleToggleLike(track._id, 'track')}
-                                >
-                                  <Heart className={`w-4 h-4 ${isLiked(track._id, 'track') ? 'fill-current' : ''}`} />
-                                </Button>
-                                {track.preview_url && (
-                                  <Button size="sm" variant="outline" asChild>
-                                    <a href={track.preview_url} target="_blank" rel="noopener noreferrer">
-                                      <Music className="w-4 h-4" />
-                                    </a>
-                                  </Button>
-                                )}
                               </div>
                             </div>
-                          </CardContent>
+
+                            <Button
+                              size="sm"
+                              variant={isLiked(track._id, 'track') ? "default" : "ghost"}
+                              onClick={() => handleToggleLike(track._id, 'track')}
+                              className="h-9 w-9 p-0 flex-shrink-0"
+                            >
+                              <Heart className={`w-4 h-4 ${isLiked(track._id, 'track') ? 'fill-current' : ''}`} />
+                            </Button>
+                          </div>
                         </Card>
                       );
                     })}
