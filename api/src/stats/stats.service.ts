@@ -47,20 +47,10 @@ export class StatsService {
     const uniqueLabelsResult = await this.albumModel.distinct('label').exec();
     const uniqueLabels = uniqueLabelsResult.length;
 
-    // Total followers
-    const totalFollowersResult = await this.artistModel.aggregate([
-      {
-        $group: {
-          _id: null,
-          totalFollowers: { $sum: '$followers' },
-        },
-      },
-    ]);
-
-    const totalFollowers =
-      totalFollowersResult.length > 0
-        ? totalFollowersResult[0].totalFollowers
-        : 0;
+    // Collaborative tracks (tracks with multiple artists)
+    const collaborativeTracksCount = await this.trackModel.countDocuments({
+      $expr: { $gt: [{ $size: '$artist_ids' }, 1] },
+    });
 
     // Avg tracks per album (excluding singles and compilations)
     const albumsOnly = await this.albumModel
@@ -100,7 +90,7 @@ export class StatsService {
       totalTracks,
       avgPopularity,
       uniqueLabels,
-      totalFollowers,
+      collaborativeTracks: collaborativeTracksCount,
       avgTracksPerAlbum,
       albumTypes,
     };

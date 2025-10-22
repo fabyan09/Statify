@@ -105,7 +105,7 @@ export interface DashboardStats {
   totalTracks: number;
   avgPopularity: number;
   uniqueLabels: number;
-  totalFollowers: number;
+  collaborativeTracks: number;
   avgTracksPerAlbum: string;
   albumTypes: Record<string, number>;
 }

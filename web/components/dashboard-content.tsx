@@ -145,8 +145,8 @@ export function DashboardContent() {
             </div>
             <div className="h-px bg-border" />
             <div className="flex justify-between items-center group">
-              <span className="text-muted-foreground group-hover:text-foreground transition-colors">Total Followers</span>
-              <span className="font-bold text-lg">{stats.totalFollowers.toLocaleString()}</span>
+              <span className="text-muted-foreground group-hover:text-foreground transition-colors">Collaborative Tracks</span>
+              <span className="font-bold text-lg">{stats.collaborativeTracks.toLocaleString()}</span>
             </div>
           </CardContent>
         </Card>
