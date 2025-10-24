@@ -26,6 +26,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { ExternalLink, Heart, Plus, ArrowLeft, User, ListMusic } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { StatifyLoader } from "@/components/StatifyLoader";
 
 export default function UserProfilePage() {
   const params = useParams();
@@ -106,7 +107,7 @@ export default function UserProfilePage() {
     return (
       <div className="flex items-center justify-center h-[50vh]">
         <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <StatifyLoader size="xl" className="mx-auto" />
           <p className="text-muted-foreground">Loading profile...</p>
         </div>
       </div>

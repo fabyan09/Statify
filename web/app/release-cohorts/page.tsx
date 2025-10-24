@@ -8,6 +8,7 @@ import { ReleasesByYearChart } from "./ReleasesByYearChart";
 import { ReleasesByMonthChart } from "./ReleasesByMonthChart";
 import { AvgPopularityByYearChart } from "./AvgPopularityByYearChart";
 import { CohortData } from "@/lib/api";
+import { StatifyLoader } from "@/components/StatifyLoader";
 
 export default function ReleaseCohortsPage() {
   const { data: cohortsData, isLoading, error } = useReleaseCohorts();
@@ -45,7 +46,7 @@ export default function ReleaseCohortsPage() {
     return (
       <div className="flex items-center justify-center h-[50vh]">
         <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <StatifyLoader size="xl" className="mx-auto" />
           <p className="text-muted-foreground">Loading release data...</p>
         </div>
       </div>

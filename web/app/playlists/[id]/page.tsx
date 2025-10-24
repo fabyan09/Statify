@@ -29,6 +29,7 @@ import {
 import Link from "next/link";
 import Image from "next/image";
 import { Label } from "@/components/ui/label";
+import { StatifyLoader } from "@/components/StatifyLoader";
 
 export default function PlaylistDetailPage() {
   const params = useParams();
@@ -440,7 +441,7 @@ export default function PlaylistDetailPage() {
             <CardContent>
               {playlistTracksLoading ? (
                 <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                  <StatifyLoader size="md" className="mx-auto" />
                 </div>
               ) : !playlistTracks || playlistTracks.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">

@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Heart, Music, Sparkles, TrendingUp, Clock, Tag } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { StatifyLoader } from "@/components/StatifyLoader";
 
 // Icon mapping
 const iconMap: Record<string, React.ElementType> = {
@@ -158,7 +159,7 @@ export default function DiscoverPage() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <Music className="w-12 h-12 animate-spin mx-auto mb-4 text-green-500" />
+          <StatifyLoader size="xl" className="mx-auto mb-4" />
           <p className="text-gray-400">Chargement...</p>
         </div>
       </div>

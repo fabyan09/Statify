@@ -29,6 +29,7 @@ import { SearchFilters } from "@/lib/api";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import { AddArtistModal } from "@/components/add-artist-modal";
+import { StatifyLoader } from "@/components/StatifyLoader";
 
 export default function SearchPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -706,7 +707,7 @@ export default function SearchPage() {
                 <CardContent>
                   {tracksLoading ? (
                     <div className="flex items-center justify-center py-12">
-                      <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
+                      <StatifyLoader size="lg" />
                     </div>
                   ) : tracks.length === 0 ? (
                     <div className="text-center py-12">
@@ -919,7 +920,7 @@ export default function SearchPage() {
                 <CardContent>
                   {albumsLoading ? (
                     <div className="flex items-center justify-center py-12">
-                      <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
+                      <StatifyLoader size="lg" />
                     </div>
                   ) : albums.length === 0 ? (
                     <div className="text-center py-12">
@@ -1034,7 +1035,7 @@ export default function SearchPage() {
                 <CardContent>
                   {artistsLoading ? (
                     <div className="flex items-center justify-center py-12">
-                      <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
+                      <StatifyLoader size="lg" />
                     </div>
                   ) : artists.length === 0 ? (
                     <div className="text-center py-12 space-y-4">
@@ -1167,7 +1168,7 @@ export default function SearchPage() {
                 <CardContent>
                   {playlistsLoading ? (
                     <div className="flex items-center justify-center py-12">
-                      <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
+                      <StatifyLoader size="lg" />
                     </div>
                   ) : playlists.length === 0 ? (
                     <div className="text-center py-12">
@@ -1266,7 +1267,7 @@ export default function SearchPage() {
                 <CardContent>
                   {usersLoading ? (
                     <div className="flex items-center justify-center py-12">
-                      <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
+                      <StatifyLoader size="lg" />
                     </div>
                   ) : users.length === 0 ? (
                     <div className="text-center py-12">

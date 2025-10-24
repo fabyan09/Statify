@@ -10,6 +10,7 @@ import { useSearchSpotifyArtists, useAddArtistFromSpotify, useSyncArtistAlbums }
 import { useDebounce } from "@/lib/useDebounce";
 import Image from "next/image";
 import { SpotifyArtistSearchResult } from "@/lib/api";
+import { StatifyLoader } from "@/components/StatifyLoader";
 
 interface AddArtistModalProps {
   open: boolean;
@@ -84,7 +85,7 @@ export function AddArtistModal({ open, onOpenChange, initialQuery = "" }: AddArt
         <div className="flex-1 overflow-y-auto space-y-3">
           {isLoading && debouncedQuery && (
             <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              <StatifyLoader size="md" />
             </div>
           )}
 
@@ -166,7 +167,7 @@ export function AddArtistModal({ open, onOpenChange, initialQuery = "" }: AddArt
                 >
                   {isProcessing(artist.spotifyId) ? (
                     <>
-                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current mr-2"></div>
+                      <StatifyLoader size="sm" className="mr-2" />
                       {artist.isOnStatify ? "Sync..." : "Ajout..."}
                     </>
                   ) : (

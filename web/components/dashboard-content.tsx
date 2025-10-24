@@ -5,6 +5,7 @@ import { useDashboardStats, useTopArtists } from "@/lib/hooks";
 import { Users, Disc, Music, TrendingUp, ExternalLink, Sparkles } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { StatifyLoader } from "@/components/StatifyLoader";
 
 export function DashboardContent() {
   const { data: stats, isLoading: statsLoading, error: statsError } = useDashboardStats();
@@ -37,7 +38,7 @@ export function DashboardContent() {
     return (
       <div className="flex items-center justify-center h-[50vh]">
         <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <StatifyLoader size="xl" className="mx-auto" />
           <p className="text-muted-foreground">Loading your music data...</p>
         </div>
       </div>

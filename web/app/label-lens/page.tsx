@@ -15,6 +15,7 @@ import {
   ChartLegendContent,
   type ChartConfig,
 } from "@/components/ui/chart";
+import { StatifyLoader } from "@/components/StatifyLoader";
 
 const barChartConfig = {
   avgPopularity: {
@@ -85,7 +86,7 @@ export default function LabelLensPage() {
     return (
       <div className="flex items-center justify-center h-[50vh]">
         <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <StatifyLoader size="xl" className="mx-auto" />
           <p className="text-muted-foreground">Loading label data...</p>
         </div>
       </div>

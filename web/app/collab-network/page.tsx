@@ -9,6 +9,7 @@ import NextImage from "next/image";
 import dynamic from "next/dynamic";
 import ElasticSlider from "./ElasticSlider";
 import { Users, Minus, Network, Zap } from "lucide-react";
+import { StatifyLoader } from "@/components/StatifyLoader";
 
 // Dynamic import to avoid SSR issues with force-graph
 const ForceGraph2D = dynamic(() => import("react-force-graph-2d"), {
@@ -129,7 +130,7 @@ export default function CollabNetworkPage() {
     return (
       <div className="flex items-center justify-center h-[50vh]">
         <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <StatifyLoader size="xl" className="mx-auto" />
           <p className="text-muted-foreground">Loading collaboration data...</p>
         </div>
       </div>
