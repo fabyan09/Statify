@@ -453,6 +453,7 @@ Le projet utilise **5 collections principales** :
   genres: ["french rap", "rap"],
   images: [{ url, height, width }],
   album_ids: ["album1", "album2"],
+  ...
   spotify_synced: true
 }
 ```
@@ -541,7 +542,7 @@ Le projet implémente **15+ types de requêtes MongoDB** incluant :
 - ✅ Jointures avec `.populate()`
 - ✅ Optimisations (`.lean()`, `.select()`, `distinct()`)
 
-**Documentation détaillée :** Voir [`api/README_BDD.md`](api/README_BDD.md)
+**Documentation détaillée :** Voir [`/README_BDD.md`](/README_BDD.md)
 
 ---
 
