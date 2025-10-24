@@ -133,7 +133,6 @@ Moteur de recommandations avec **6 sections personnalisées** :
 | **Cache Manager** | 7.2.4 | Système de cache en mémoire |
 | **bcrypt** | 6.0.0 | Hashage de mots de passe |
 | **Spotify SDK** | 1.2.0 | Intégration API Spotify |
-| **Jest** | 29.7.0 | Tests unitaires & e2e |
 
 ---
 
