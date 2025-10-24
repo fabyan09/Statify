@@ -1,495 +1,454 @@
 # Page Discover - Documentation Technique
 
-## Vue d'ensemble
+> **Note :** Cette documentation a été réalisée dans le cadre d'un projet académique de Base de Données.
 
-La page **Discover** est un système de recommandation musicale personnalisé qui analyse les préférences de l'utilisateur (artistes favoris, albums likés, tracks sauvegardés, playlists) pour proposer du contenu musical pertinent et cohérent.
+---
 
-## Architecture
+## 📋 Vue d'ensemble
 
-### Fichier principal
-- **Chemin**: `web/app/discover/page.tsx`
-- **Type**: Client Component (Next.js App Router)
+La page **Discover** est un **système de recommandation musicale personnalisé** qui analyse automatiquement les préférences de l'utilisateur pour proposer du contenu musical pertinent.
 
-### Dépendances clés
+**Localisation :**
+- **Frontend :** `/web/app/discover/page.tsx` (affichage)
+- **Backend :** `/api/src/recommendations/recommendations.service.ts` (algorithme)
 
-```typescript
-import { useAuth } from "@/contexts/auth-context";
-import {
-  useArtists,
-  useAlbums,
-  useTracks,
-  useUser,
-  useAddToLibrary,
-  useRemoveFromLibrary,
-  useUserPlaylists
-} from "@/lib/hooks";
-```
+**Principe :** L'algorithme côté serveur analyse la bibliothèque de l'utilisateur (artistes favoris, albums likés, tracks sauvegardées) pour générer **6 sections de recommandations** personnalisées.
 
-## Algorithme de recommandation
+---
 
-### Principe général
+## 🧠 Algorithme de Recommandation
 
-L'algorithme génère **6 sections de recommandations** en analysant différentes dimensions des goûts musicaux :
+### Localisation
+Le calcul des recommandations est effectué **côté backend** (NestJS) dans le service `RecommendationsService`.
 
-1. Genres musicaux
-2. Labels de disques
-3. Périodes temporelles (années/décennies)
-4. Artistes liés
-5. Popularité globale
-6. Nouveautés récentes
+### Étapes principales
 
-### Étapes de calcul
+#### 1. Analyse des préférences utilisateur
 
-#### 1. Extraction des préférences utilisateur
+L'algorithme commence par extraire les goûts de l'utilisateur en analysant sa bibliothèque :
 
 ```typescript
-// Genres favoris (avec pondération par fréquence)
+// Analyse des genres favoris (avec compteur de fréquence)
 const favoriteGenres = new Map<string, number>();
-user.favorite_artists.forEach(artistId => {
-  const artist = artistMap.get(artistId);
-  artist.genres.forEach(genre => {
+
+// Depuis les artistes favoris
+favoriteArtistsData.forEach(artist => {
+  artist.genres?.forEach(genre => {
     favoriteGenres.set(genre, (favoriteGenres.get(genre) || 0) + 1);
   });
 });
 
-// Labels favoris
+// Analyse des labels favoris
 const favoriteLabels = new Map<string, number>();
-user.liked_albums.forEach(albumId => {
-  const album = albumMap.get(albumId);
-  favoriteLabels.set(album.label, (favoriteLabels.get(album.label) || 0) + 1);
-});
-
-// Artistes liés aux tracks likés
-const likedTrackArtists = new Set<string>();
-user.liked_tracks.forEach(trackId => {
-  const track = allTracks.find(t => t._id === trackId);
-  track.artist_ids.forEach(id => likedTrackArtists.add(id));
+likedAlbumsData.forEach(album => {
+  if (album.label) {
+    favoriteLabels.set(album.label, (favoriteLabels.get(album.label) || 0) + 1);
+  }
 });
 ```
 
-#### 2. Génération des sections
+**Techniques utilisées :**
+- `Map<string, number>` pour compter les occurrences de genres/labels
+- Analyse croisée : artistes + albums + tracks pour avoir une vue complète
 
-##### Section 1: Artistes recommandés (par genre)
+---
 
-**Critères**:
-- Artistes non encore likés
-- Partageant au moins un genre avec les favoris
-- Score = Σ (fréquence_genre × popularité_artiste / 100)
+#### 2. Génération des 6 sections
 
-**Tri**: Par score décroissant
+##### Section 1 : Artistes recommandés (par genre)
 
-**Limite**: 8 artistes
-
+**Requête MongoDB :**
 ```typescript
-const similarArtistsByGenre = allArtists
-  .filter(artist =>
-    !user.favorite_artists.includes(artist._id) &&
-    artist.genres.some(genre => favoriteGenres.has(genre))
-  )
-  .map(artist => ({
-    ...artist,
-    score: artist.genres.reduce((sum, genre) =>
-      sum + (favoriteGenres.get(genre) || 0) * artist.popularity / 100, 0
-    )
-  }))
-  .sort((a, b) => b.score - a.score)
-  .slice(0, 8);
+const similarArtists = await this.artistModel
+  .find({
+    _id: { $nin: user.favorite_artists },  // Exclure les artistes déjà likés
+    genres: { $in: genresArray },          // Genres en commun
+  })
+  .sort({ popularity: -1 })                // Trier par popularité
+  .limit(8)
+  .exec();
 ```
 
-##### Section 2: Albums par label
+**Concepts MongoDB :**
+- `$nin` (Not In) : exclusion d'éléments
+- `$in` : recherche dans un tableau
+- `.sort()` et `.limit()` : pagination et tri
 
-**Critères**:
-- Albums des 3 labels les plus fréquents dans la bibliothèque
-- Albums non encore likés
-- Tri par popularité
+---
 
-**Limite**: 8 albums
+##### Section 2 : Albums de labels préférés
 
+**Logique :**
+1. Extraire les 3 labels les plus fréquents
+2. Trouver des albums de ces labels non encore likés
+
+**Requête MongoDB :**
 ```typescript
 const topLabels = Array.from(favoriteLabels.entries())
-  .sort((a, b) => b[1] - a[1])
+  .sort((a, b) => b[1] - a[1])  // Tri par fréquence
   .slice(0, 3)
   .map(([label]) => label);
 
-const albumsFromFavoriteLabels = allAlbums
-  .filter(album =>
-    topLabels.includes(album.label) &&
-    !user.liked_albums.includes(album._id)
-  )
-  .sort((a, b) => b.popularity - a.popularity)
-  .slice(0, 8);
-```
-
-##### Section 3: Nouveautés (année en cours et N-1)
-
-**Critères**:
-- Albums sortis dans les 2 dernières années
-- Dans les genres favoris
-- Non likés
-
-**Tri**: Par date de sortie (plus récent en premier)
-
-**Limite**: 8 albums
-
-```typescript
-const currentYear = new Date().getFullYear();
-const recentYears = [currentYear, currentYear - 1];
-
-const recentAlbumsInFavoriteGenres = allAlbums
-  .filter(album => {
-    const releaseYear = new Date(album.release_date).getFullYear();
-    return recentYears.includes(releaseYear) &&
-      !user.liked_albums.includes(album._id) &&
-      album.genres.some(genre => favoriteGenres.has(genre));
+const albumsFromLabels = await this.albumModel
+  .find({
+    label: { $in: topLabels },
+    _id: { $nin: user.liked_albums },
   })
-  .sort((a, b) => new Date(b.release_date) - new Date(a.release_date))
-  .slice(0, 8);
+  .sort({ popularity: -1 })
+  .limit(8)
+  .exec();
 ```
 
-##### Section 4: Tracks recommandés (artistes similaires)
+---
 
-**Critères**:
-- Tracks non likés
-- Artistes ayant des genres en commun avec les favoris
+##### Section 3 : Nouveautés récentes
 
-**Tri**: Par popularité
+**Critères :**
+- Albums sortis dans les **2 dernières années**
+- Dans les genres favoris de l'utilisateur
 
-**Limite**: 10 tracks
-
+**Requête MongoDB :**
 ```typescript
-const tracksFromSimilarArtists = allTracks
-  .filter(track => {
-    const trackArtistGenres = track.artist_ids
-      .map(id => artistMap.get(id))
-      .filter(Boolean)
-      .flatMap(artist => artist.genres);
+const twoYearsAgo = new Date();
+twoYearsAgo.setFullYear(currentYear - 2);
 
-    return !user.liked_tracks.includes(track._id) &&
-      trackArtistGenres.some(genre => favoriteGenres.has(genre));
+const recentAlbums = await this.albumModel
+  .find({
+    _id: { $nin: user.liked_albums },
+    genres: { $in: genresArray },
+    release_date: { $gte: twoYearsAgo.toISOString() },  // Comparaison de dates
   })
-  .sort((a, b) => b.popularity - a.popularity)
-  .slice(0, 10);
+  .sort({ release_date: -1 })  // Plus récents en premier
+  .limit(8)
+  .exec();
 ```
 
-##### Section 5: Tendances (popularité globale)
+**Concepts MongoDB :**
+- `$gte` (Greater Than or Equal) : comparaison de dates
+- Tri par date décroissante
 
-**Critères**:
-- Tracks non likés
-- Popularité ≥ 70
+---
 
-**Tri**: Par popularité
+##### Section 4 : Tracks populaires (genres similaires)
 
-**Limite**: 10 tracks
+**Logique en 2 étapes :**
+1. Trouver les artistes dans les genres favoris
+2. Récupérer les tracks populaires de ces artistes
 
+**Requêtes MongoDB :**
 ```typescript
-const trendingTracks = allTracks
-  .filter(track =>
-    !user.liked_tracks.includes(track._id) &&
-    track.popularity >= 70
-  )
-  .sort((a, b) => b.popularity - a.popularity)
-  .slice(0, 10);
-```
+// Étape 1: Trouver les artistes
+const artistsInGenres = await this.artistModel
+  .find({ genres: { $in: genresArray } })
+  .select('_id')  // Ne récupérer que les IDs (optimisation)
+  .limit(100)
+  .exec();
 
-##### Section 6: Classiques par décennie
-
-**Critères**:
-- Calcul de l'année moyenne des albums likés
-- Détermination de la décennie (arrondi à la dizaine inférieure)
-- Albums de cette décennie non likés
-
-**Tri**: Par popularité
-
-**Limite**: 8 albums
-
-```typescript
-const likedAlbumYears = user.liked_albums
-  .map(albumId => albumMap.get(albumId))
-  .filter(Boolean)
-  .map(album => new Date(album.release_date).getFullYear())
-  .filter(year => !isNaN(year));
-
-const avgYear = Math.floor(
-  likedAlbumYears.reduce((sum, year) => sum + year, 0) / likedAlbumYears.length
-);
-const decade = Math.floor(avgYear / 10) * 10;
-
-const albumsFromFavoriteDecade = allAlbums
-  .filter(album => {
-    const year = new Date(album.release_date).getFullYear();
-    return year >= decade && year < decade + 10 &&
-      !user.liked_albums.includes(album._id);
+// Étape 2: Trouver les tracks
+const popularTracks = await this.trackModel
+  .find({
+    _id: { $nin: user.liked_tracks },
+    artist_ids: { $in: artistIds },
   })
-  .sort((a, b) => b.popularity - a.popularity)
-  .slice(0, 8);
+  .populate('album_id')  // Jointure avec la collection albums
+  .sort({ popularity: -1 })
+  .limit(10)
+  .exec();
 ```
 
-## Structure de données
+**Concepts MongoDB :**
+- `.select()` : projection de champs (optimisation)
+- `.populate()` : équivalent d'une jointure SQL
+- Requêtes en cascade (résultat 1 → filtre 2)
 
-### Type RecommendationSection
+---
+
+##### Section 5 : Tendances actuelles
+
+**Critère simple :**
+- Tracks avec une **popularité ≥ 70**
+
+**Requête MongoDB :**
+```typescript
+const trendingTracks = await this.trackModel
+  .find({
+    _id: { $nin: user.liked_tracks },
+    popularity: { $gte: 70 },
+  })
+  .populate('album_id')
+  .sort({ popularity: -1 })
+  .limit(10)
+  .exec();
+```
+
+---
+
+##### Section 6 : Artistes populaires (Fallback)
+
+**Condition :** Affichée uniquement si l'utilisateur n'a pas assez de préférences (< 3 sections générées)
+
+**Requête MongoDB :**
+```typescript
+const popularArtists = await this.artistModel
+  .find({ _id: { $nin: user.favorite_artists } })
+  .sort({ popularity: -1 })
+  .limit(8)
+  .exec();
+```
+
+---
+
+## 💾 Système de Cache
+
+### Stratégie de cache
+Les recommandations sont **stockées en base de données** (dans le document utilisateur) pour éviter de recalculer à chaque visite.
+
+**Durée de validité :** 24 heures
 
 ```typescript
-interface RecommendationSection {
-  title: string;           // Titre de la section
-  description: string;     // Description contextuelle
-  icon: React.ElementType; // Icône Lucide React
-  items: (Artist | Album | Track)[]; // Items recommandés
-  type: 'artist' | 'album' | 'track'; // Type pour le rendu
+const CACHE_DURATION_MS = 24 * 60 * 60 * 1000; // 24 heures
+
+// Vérification de la fraîcheur du cache
+const isFresh = hasRecommendations &&
+  (now.getTime() - new Date(user.recommendations.lastUpdated).getTime()) < CACHE_DURATION_MS;
+
+if (isFresh) {
+  // Retourner le cache
+  return this.populateRecommendations(user.recommendations.sections);
 }
 ```
 
-### Modèles de données
+**Stockage optimisé :**
+- Seuls les **IDs** des items sont stockés dans le user document
+- Les objets complets sont récupérés à la lecture via `.populate()`
 
 ```typescript
-interface Artist {
-  _id: string;
-  name: string;
-  popularity: number;      // 0-100
-  followers: number;
-  genres: string[];
-  images: Image[];
-  external_urls: { spotify: string };
-}
+// Stockage (IDs seulement)
+await this.userModel.findByIdAndUpdate(userId, {
+  recommendations: {
+    sections: sectionsWithIds,  // { itemIds: ["id1", "id2", ...] }
+    lastUpdated: now,
+  },
+});
 
-interface Album {
-  _id: string;
-  name: string;
-  album_type: string;      // "album" | "single" | "compilation"
-  release_date: string;    // ISO date
-  popularity: number;      // 0-100
-  images: Image[];
-  label: string;
-  artist_ids: string[];
-  genres: string[];
-  external_urls: { spotify: string };
-}
-
-interface Track {
-  _id: string;
-  name: string;
-  popularity: number;      // 0-100
-  duration_ms: number;
-  explicit: boolean;
-  album_id: string;
-  artist_ids: string[];
-  external_urls: { spotify: string };
-  preview_url: string;
-}
+// Lecture (populate avec objets complets)
+items = await this.artistModel.find({ _id: { $in: section.itemIds } }).exec();
 ```
 
-## Interface utilisateur
+---
+
+## 🎨 Interface Utilisateur
 
 ### Layout par type de contenu
 
-#### Artistes (Grid)
-- **Grid responsive**: 2-4 colonnes selon la taille d'écran
-- **Image**: Circulaire (aspect-square)
-- **Infos affichées**:
-  - Nom (cliquable vers `/artists/{id}`)
-  - Genres (max 2)
-  - Score de popularité
-  - Boutons : Like + Spotify
+Le frontend affiche les recommandations différemment selon le type :
 
-#### Albums (Grid)
-- **Grid responsive**: 2-4 colonnes
-- **Image**: Carrée arrondie (aspect-square)
-- **Infos affichées**:
-  - Nom (cliquable vers `/albums/{id}`)
-  - Artistes
-  - Type d'album + Année
-  - Score de popularité
-  - Boutons : Like + Spotify
+#### Artistes
+- **Layout :** Grid responsive (2-4 colonnes)
+- **Image :** Circulaire
+- **Infos :** Nom, genres (max 2), popularité
+- **Actions :** Like + Lien Spotify
 
-#### Tracks (Liste)
-- **Layout**: Liste verticale
-- **Image**: Mini pochette d'album (16x16)
-- **Infos affichées**:
-  - Nom du titre + Badge explicit
-  - Artistes
-  - Album
-  - Durée formatée (mm:ss)
-  - Score de popularité
-  - Boutons : Like + Preview Spotify
+#### Albums
+- **Layout :** Grid responsive (2-4 colonnes)
+- **Image :** Carrée arrondie
+- **Infos :** Nom, type, année, popularité
+- **Actions :** Like + Lien Spotify
 
-### Interactions utilisateur
+#### Tracks
+- **Layout :** Liste verticale (2 colonnes sur desktop)
+- **Image :** Mini pochette d'album
+- **Infos :** Nom, durée, popularité, badge explicit
+- **Actions :** Like + Preview Spotify
 
-#### Like/Unlike
+### Navigation entre sections
+
+**Menu flottant en bas de page** avec :
+- Icônes pour chaque section
+- Badge avec nombre d'items
+- Auto-scroll au clic
+- Mise en surbrillance de la section active
 
 ```typescript
-const handleToggleLike = async (itemId: string, itemType: 'track' | 'album' | 'artist') => {
-  if (!currentUser) return;
-
-  const isLiked = /* check user library */;
-
-  if (isLiked) {
-    removeFromLibrary.mutate({
-      userId: currentUser._id,
-      data: { [`${itemType}_id`]: itemId }
-    });
-  } else {
-    addToLibrary.mutate({
-      userId: currentUser._id,
-      data: { [`${itemType}_id`]: itemId }
-    });
-  }
+// Détection de la section visible
+const handleScroll = () => {
+  sections.forEach((section, index) => {
+    const rect = section.getBoundingClientRect();
+    const visibleArea = /* calcul de surface visible */ ;
+    if (visibleArea > maxVisibleArea) {
+      setActiveSection(index);
+    }
+  });
 };
 ```
 
-#### État de like (visuel)
+---
 
-```typescript
-const isLiked = (itemId: string, itemType: 'track' | 'album' | 'artist') => {
-  if (!user) return false;
-  return itemType === 'track'
-    ? user.liked_tracks?.includes(itemId)
-    : itemType === 'album'
-    ? user.liked_albums?.includes(itemId)
-    : user.favorite_artists?.includes(itemId);
-};
+## 🏗️ Architecture Technique
+
+### Backend (NestJS)
+
+```
+┌────────────────────────────────────────┐
+│  RecommendationsController             │
+│  GET /recommendations/:userId          │
+└─────────────┬──────────────────────────┘
+              │
+              ▼
+┌────────────────────────────────────────┐
+│  RecommendationsService                │
+│  - getRecommendations()                │
+│  - computeRecommendations()            │
+│  - populateRecommendations()           │
+└─────────────┬──────────────────────────┘
+              │
+              ▼
+┌────────────────────────────────────────┐
+│  MongoDB (Mongoose Models)             │
+│  - User (avec cache recommendations)   │
+│  - Artist, Album, Track                │
+└────────────────────────────────────────┘
 ```
 
-## États de chargement
-
-### Étapes de chargement
-
-1. **Auth check**: Vérification utilisateur connecté
-2. **User data**: Chargement des données utilisateur
-3. **Music data**: Chargement artistes/albums/tracks en parallèle
-4. **Recommendations**: Calcul des recommandations
-
-### Messages de chargement
+### Frontend (Next.js)
 
 ```typescript
-// Phase 1: Pas d'utilisateur
-if (!currentUser || userLoading) {
-  return <LoadingSpinner message="Chargement..." />;
-}
+// Hook React Query
+const { data: recommendationsData } = useRecommendations(userId);
 
-// Phase 2: Chargement des données musicales
-if (artistsLoading || albumsLoading || tracksLoading) {
-  return <LoadingSpinner message="Analyse de vos goûts musicaux..." />;
-}
-
-// Phase 3: Pas de recommandations
-if (recommendations.length === 0) {
-  return <EmptyState />;
+// Structure des données
+interface RecommendationSection {
+  title: string;
+  description: string;
+  icon: string;  // 'sparkles', 'tag', 'clock', etc.
+  type: 'artist' | 'album' | 'track';
+  items: (Artist | Album | Track)[];
 }
 ```
 
-## Optimisations
+---
 
-### Maps pour accès O(1)
+## 📊 Requêtes MongoDB Utilisées
 
-```typescript
-const artistMap = new Map(artists.map(a => [a._id, a]));
-const albumMap = new Map(albums.map(a => [a._id, a]));
+| Opérateur | Utilisation | Section |
+|-----------|-------------|---------|
+| `$in` | Filtrer par tableau de valeurs | Toutes |
+| `$nin` | Exclure des valeurs (items déjà likés) | Toutes |
+| `$gte` | Comparaison de dates et popularité | Nouveautés, Tendances |
+| `.sort()` | Tri par popularité/date | Toutes |
+| `.limit()` | Limiter le nombre de résultats | Toutes |
+| `.select()` | Projection (optimisation) | Section 4 |
+| `.populate()` | Jointure (tracks → albums) | Sections 4 et 5 |
+| `.exec()` | Exécution de la requête | Toutes |
+
+---
+
+## 🎯 Défis Techniques Rencontrés
+
+### 1. Performance des requêtes
+
+**Problème :** Calculer 6 sections = 6+ requêtes MongoDB par utilisateur
+
+**Solution :**
+- Cache de 24h en base de données
+- Stockage des IDs uniquement (pas d'objets complets)
+- Utilisation de `.select()` pour limiter les champs récupérés
+
+### 2. Gestion des utilisateurs sans préférences
+
+**Problème :** Que recommander à un nouvel utilisateur ?
+
+**Solution :**
+- Fallback vers des recommandations génériques (popularité globale)
+- Section "Artistes populaires" si moins de 3 sections générées
+
+### 3. Éviter de recommander du contenu déjà liké
+
+**Problème :** Ne pas proposer ce que l'utilisateur a déjà
+
+**Solution :**
+- Utilisation systématique de `$nin` (Not In) pour filtrer
+- Vérification côté frontend pour afficher l'état du like
+
+---
+
+## 🔄 Flux de Données Complet
+
+```
+1. User clique sur "Discover"
+   │
+   ▼
+2. Frontend appelle GET /recommendations/:userId
+   │
+   ▼
+3. Backend vérifie le cache (24h)
+   │
+   ├─ Si frais → Retourne cache + populate
+   │
+   └─ Si expiré → Calcule nouvelles recommandations
+      │
+      ├─ Analyse genres/labels favoris (Maps)
+      │
+      ├─ Exécute 6 requêtes MongoDB en séquence
+      │
+      ├─ Sauvegarde en cache (IDs seulement)
+      │
+      └─ Retourne sections avec objets complets
+   │
+   ▼
+4. Frontend reçoit les sections
+   │
+   ▼
+5. Affichage par type (artists/albums/tracks)
+   │
+   ▼
+6. User peut like/unlike → Mutation React Query
 ```
 
-### Calculs en une seule passe
+---
 
-Les genres et labels favoris sont calculés en une seule itération via `Map` avec compteurs.
+## 🚀 Points Forts Techniques
 
-### Memoization implicite
+### Côté Base de Données
+- ✅ Utilisation de **Maps** pour comptage O(1)
+- ✅ Requêtes MongoDB optimisées avec `.select()` et `.limit()`
+- ✅ **Jointures** via `.populate()` (tracks ↔ albums)
+- ✅ Cache intelligent avec TTL (Time To Live)
+- ✅ Opérateurs avancés : `$in`, `$nin`, `$gte`
 
-Les recommandations sont recalculées uniquement quand les dépendances changent (useEffect).
+### Côté Architecture
+- ✅ Séparation frontend/backend (API REST)
+- ✅ Service dédié avec logger (NestJS)
+- ✅ React Query pour le cache côté client
+- ✅ UI responsive avec layouts adaptés par type
 
-## Intégration dans l'application
+---
 
-### Route
-- **Path**: `/discover`
-- **Navigation**: Entre "Search" et "Collab Network"
-- **Icône**: Sparkles (✨)
+## 📝 Concepts de BDD Illustrés
 
-### Protection
-- **Auth required**: Oui (redirection vers `/auth`)
-- **Données requises**: Profil utilisateur avec likes
+| Concept | Implémentation |
+|---------|----------------|
+| **Cache** | Stockage des recommandations avec TTL 24h |
+| **Projection** | `.select('_id')` pour ne récupérer que les IDs |
+| **Jointures** | `.populate('album_id')` équivalent LEFT JOIN |
+| **Index** | Tri rapide par `popularity` (index implicite) |
+| **Opérateurs de tableau** | `$in`, `$nin` pour filtrer les arrays |
+| **Comparaison** | `$gte` pour dates et popularité |
+| **Agrégation (logique)** | Comptage de genres/labels avec Maps |
+| **Normalisation** | Relations Artist ↔ Album ↔ Track |
 
-## Métriques et KPIs possibles
+---
 
-Pour analyser l'efficacité des recommandations (à implémenter) :
+## 🎓 Conclusion
 
-1. **Taux de like**: % de recommandations likées
-2. **Taux de clic**: % de recommandations consultées
-3. **Diversité**: Nombre de genres/labels/décennies représentés
-4. **Freshness**: % de contenu récent vs ancien
-5. **Découvrabilité**: % d'artistes/albums jamais consultés avant
+La page **Discover** démontre :
+- Une **architecture full-stack** complète (Frontend React + Backend NestJS + MongoDB)
+- L'utilisation de **requêtes MongoDB avancées** (filtrage, tri, jointures)
+- Un **système de cache intelligent** pour optimiser les performances
+- Une **UI adaptative** selon le type de contenu
 
-## Évolutions possibles
+Le moteur de recommandations combine analyse de préférences et requêtes optimisées pour offrir une expérience personnalisée tout en restant performant.
 
-### Court terme
-- Ajout de filtres (genres, années, popularité)
-- Pagination des sections
-- Recherche dans les recommandations
-- Partage de recommandations
+---
 
-### Moyen terme
-- Machine learning pour scoring personnalisé
-- Recommandations collaboratives (utilisateurs similaires)
-- Historique des recommandations vues/likées
-- Notifications pour nouvelles recommandations
-
-### Long terme
-- Intégration API Spotify Recommendations
-- Analyse audio avancée (tempo, énergie, valence)
-- Playlists générées automatiquement
-- Export vers Spotify
-
-## Troubleshooting
-
-### Problème: Pas de recommandations affichées
-
-**Causes possibles**:
-1. Utilisateur n'a pas de likes dans sa bibliothèque
-2. Pas assez de données pour générer des recommandations
-3. Tous les items recommandables sont déjà likés
-
-**Solution**: Afficher un état vide avec CTA vers `/library`
-
-### Problème: Sections vides
-
-**Cause**: Filtres trop stricts pour certains profils musicaux
-
-**Solution**: Assouplir les critères (ex: accepter 1 genre en commun au lieu de plusieurs)
-
-### Problème: Recommandations non pertinentes
-
-**Cause**: Poids des critères inadaptés
-
-**Solution**: Ajuster les scores et pondérations dans l'algorithme
-
-## Performance
-
-### Complexité algorithmique
-
-- **Temps**: O(n) pour chaque section (où n = nombre d'items totaux)
-- **Espace**: O(m) (où m = nombre de genres/labels uniques)
-
-### Optimisations React
-
-- Client component avec `"use client"`
-- useEffect avec dépendances précises
-- Mutations optimistes pour les likes (React Query)
-- Images Next.js optimisées automatiquement
-
-## Tests recommandés
-
-### Tests unitaires
-- [ ] Génération des favoris (genres, labels)
-- [ ] Scoring des artistes similaires
-- [ ] Filtrage des années
-- [ ] Calcul de la décennie moyenne
-
-### Tests d'intégration
-- [ ] Chargement des données utilisateur
-- [ ] Mutations like/unlike
-- [ ] Navigation entre sections
-- [ ] Liens Spotify
-
-### Tests E2E
-- [ ] Scénario utilisateur complet (login → discover → like)
-- [ ] Responsive design (mobile/tablet/desktop)
-- [ ] États de chargement et erreurs
-
-## Conclusion
-
-La page Discover fournit un système de recommandation musical riche et personnalisé en analysant 6 dimensions différentes des goûts musicaux. L'algorithme est extensible et peut être amélioré progressivement avec des métriques d'engagement et du machine learning.
+*Projet réalisé dans le cadre du cours de Base de Données*
