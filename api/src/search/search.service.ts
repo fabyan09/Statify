@@ -19,6 +19,32 @@ export class SearchService {
     @InjectModel(Playlist.name) private playlistModel: Model<PlaylistDocument>,
   ) {}
 
+  /**
+   * Crée une regex flexible qui ignore la ponctuation et les espaces multiples
+   * Exemples:
+   * - "dr dre" matche "Dr. Dre", "Dr Dre", "dr-dre", etc.
+   * - "post malone" matche "Post Malone", "post-malone", etc.
+   * - "a$ap rocky" matche "A$AP Rocky", "asap rocky", etc.
+   *
+   * Note: Pour gérer les typos (ex: "ninha" → "Ninho"), utiliser MongoDB Atlas Search
+   * avec l'option fuzzy serait plus approprié.
+   */
+  private buildFlexibleRegex(query: string): string {
+    // Échappe les caractères spéciaux de regex (sauf $, pour gérer A$AP)
+    const escaped = query.replace(/[.*+?^{}()|[\]\\]/g, '\\$&');
+
+    // Remplace les espaces et ponctuation par un pattern flexible
+    const flexible = escaped
+      .split(/\s+/)  // Split sur les espaces
+      .map(word =>
+        // Pour chaque mot, permet de la ponctuation/espaces optionnels entre les lettres
+        word.split('').join('[.\\s\\-\'$]*')
+      )
+      .join('[.\\s\\-\'$]+');  // Entre les mots, au moins un séparateur
+
+    return flexible;
+  }
+
   async search(
     query: string,
     type: 'tracks' | 'albums' | 'artists' | 'playlists' | 'users',
@@ -90,9 +116,10 @@ export class SearchService {
     page: number,
     filters?: any,
   ): Promise<PaginatedResult<SearchTrackDto>> {
-    // Build the filter object with case-insensitive regex
+    // Build the filter object with flexible regex (ignore ponctuation et espaces)
+    const flexiblePattern = this.buildFlexibleRegex(query);
     const filter: any = {
-      name: { $regex: query, $options: 'i' } // Case-insensitive partial match
+      name: { $regex: flexiblePattern, $options: 'i' }
     };
 
     // Add popularity filter
@@ -199,9 +226,10 @@ export class SearchService {
     page: number,
     filters?: any,
   ): Promise<PaginatedResult<SearchAlbumDto>> {
-    // Build the filter object with case-insensitive regex
+    // Build the filter object with flexible regex (ignore ponctuation et espaces)
+    const flexiblePattern = this.buildFlexibleRegex(query);
     const filter: any = {
-      name: { $regex: query, $options: 'i' } // Case-insensitive partial match
+      name: { $regex: flexiblePattern, $options: 'i' }
     };
 
     // Add popularity filter
@@ -322,9 +350,10 @@ export class SearchService {
     page: number,
     filters?: any,
   ): Promise<PaginatedResult<Artist>> {
-    // Build the filter object with case-insensitive regex
+    // Build the filter object with flexible regex (ignore ponctuation et espaces)
+    const flexiblePattern = this.buildFlexibleRegex(query);
     const filter: any = {
-      name: { $regex: query, $options: 'i' } // Case-insensitive partial match
+      name: { $regex: flexiblePattern, $options: 'i' }
     };
 
     // Add popularity filter
@@ -403,8 +432,9 @@ export class SearchService {
     limit: number,
     page: number,
   ): Promise<PaginatedResult<Playlist>> {
+    const flexiblePattern = this.buildFlexibleRegex(query);
     const filter: any = {
-      name: { $regex: query, $options: 'i' }, // Case-insensitive partial match
+      name: { $regex: flexiblePattern, $options: 'i' },
       isPublic: true,
     };
 
@@ -439,8 +469,9 @@ export class SearchService {
     limit: number,
     page: number,
   ): Promise<PaginatedResult<User>> {
+    const flexiblePattern = this.buildFlexibleRegex(query);
     const filter = {
-      username: { $regex: query, $options: 'i' } // Case-insensitive partial match
+      username: { $regex: flexiblePattern, $options: 'i' }
     };
 
     const [data, total] = await Promise.all([
