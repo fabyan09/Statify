@@ -245,12 +245,38 @@ export async function fetchTopArtists(limit = 10): Promise<TopArtist[]> {
 type SearchResultType = SearchTrack | SearchAlbum | SearchArtist | SearchPlaylist | SearchUser;
 
 export interface SearchFilters {
+  // Popularity filters (all types)
   minPopularity?: number;
   maxPopularity?: number;
+
+  // Genre filter (albums, artists)
   genre?: string;
+
+  // Year filters (albums)
   year?: number;
   fromYear?: number;
   toYear?: number;
+
+  // Album type filter (albums)
+  albumType?: string; // 'album' | 'single' | 'compilation'
+
+  // Label filter (albums)
+  label?: string;
+
+  // Explicit filter (tracks)
+  explicit?: boolean;
+
+  // Duration filter (tracks) - in minutes
+  minDuration?: number;
+  maxDuration?: number;
+
+  // Followers filter (artists)
+  minFollowers?: number;
+  maxFollowers?: number;
+
+  // Sort options (all types)
+  sortBy?: string; // 'popularity' | 'name' | 'releaseDate' | 'followers' | 'duration'
+  sortOrder?: 'asc' | 'desc';
 }
 
 export interface SearchParams extends PaginationParams {
@@ -296,15 +322,20 @@ export async function search(
 
   // Add filters to search params
   if (params?.filters) {
+    // Popularity filters (all types)
     if (params.filters.minPopularity !== undefined) {
       searchParams.set('minPopularity', params.filters.minPopularity.toString());
     }
     if (params.filters.maxPopularity !== undefined) {
       searchParams.set('maxPopularity', params.filters.maxPopularity.toString());
     }
+
+    // Genre filter (albums, artists)
     if (params.filters.genre) {
       searchParams.set('genre', params.filters.genre);
     }
+
+    // Year filters (albums)
     if (params.filters.year) {
       searchParams.set('year', params.filters.year.toString());
     }
@@ -313,6 +344,45 @@ export async function search(
     }
     if (params.filters.toYear) {
       searchParams.set('toYear', params.filters.toYear.toString());
+    }
+
+    // Album type filter (albums)
+    if (params.filters.albumType) {
+      searchParams.set('albumType', params.filters.albumType);
+    }
+
+    // Label filter (albums)
+    if (params.filters.label) {
+      searchParams.set('label', params.filters.label);
+    }
+
+    // Explicit filter (tracks)
+    if (params.filters.explicit !== undefined) {
+      searchParams.set('explicit', params.filters.explicit.toString());
+    }
+
+    // Duration filters (tracks)
+    if (params.filters.minDuration !== undefined) {
+      searchParams.set('minDuration', params.filters.minDuration.toString());
+    }
+    if (params.filters.maxDuration !== undefined) {
+      searchParams.set('maxDuration', params.filters.maxDuration.toString());
+    }
+
+    // Followers filters (artists)
+    if (params.filters.minFollowers !== undefined) {
+      searchParams.set('minFollowers', params.filters.minFollowers.toString());
+    }
+    if (params.filters.maxFollowers !== undefined) {
+      searchParams.set('maxFollowers', params.filters.maxFollowers.toString());
+    }
+
+    // Sort options (all types)
+    if (params.filters.sortBy) {
+      searchParams.set('sortBy', params.filters.sortBy);
+    }
+    if (params.filters.sortOrder) {
+      searchParams.set('sortOrder', params.filters.sortOrder);
     }
   }
 

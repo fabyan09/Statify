@@ -25,12 +25,30 @@ export class SearchService {
     page = 1,
     limit = 20,
     filters?: {
+      // Popularity filters (all types)
       minPopularity?: number;
       maxPopularity?: number;
+      // Genre filter (albums, artists)
       genre?: string;
+      // Year filters (albums)
       year?: number;
       fromYear?: number;
       toYear?: number;
+      // Album type filter (albums)
+      albumType?: string;
+      // Label filter (albums)
+      label?: string;
+      // Explicit filter (tracks)
+      explicit?: boolean;
+      // Duration filters (tracks) - in minutes
+      minDuration?: number;
+      maxDuration?: number;
+      // Followers filters (artists)
+      minFollowers?: number;
+      maxFollowers?: number;
+      // Sort options (all types)
+      sortBy?: string;
+      sortOrder?: 'asc' | 'desc';
     },
   ): Promise<PaginatedResult<any>> {
     if (!query || query.trim().length === 0) {
@@ -70,14 +88,7 @@ export class SearchService {
     skip: number,
     limit: number,
     page: number,
-    filters?: {
-      minPopularity?: number;
-      maxPopularity?: number;
-      genre?: string;
-      year?: number;
-      fromYear?: number;
-      toYear?: number;
-    },
+    filters?: any,
   ): Promise<PaginatedResult<SearchTrackDto>> {
     // Build the filter object with case-insensitive regex
     const filter: any = {
@@ -95,11 +106,45 @@ export class SearchService {
       }
     }
 
+    // Add explicit filter
+    if (filters?.explicit !== undefined) {
+      filter.explicit = filters.explicit;
+    }
+
+    // Add duration filters (convert minutes to milliseconds)
+    if (filters?.minDuration !== undefined || filters?.maxDuration !== undefined) {
+      filter.duration_ms = {};
+      if (filters.minDuration !== undefined) {
+        filter.duration_ms.$gte = filters.minDuration * 60000; // minutes to ms
+      }
+      if (filters.maxDuration !== undefined) {
+        filter.duration_ms.$lte = filters.maxDuration * 60000; // minutes to ms
+      }
+    }
+
+    // Determine sort criteria
+    let sortCriteria: any = { popularity: -1 }; // Default sort
+    if (filters?.sortBy) {
+      const sortOrder = filters.sortOrder === 'asc' ? 1 : -1;
+      switch (filters.sortBy) {
+        case 'name':
+          sortCriteria = { name: sortOrder };
+          break;
+        case 'duration':
+          sortCriteria = { duration_ms: sortOrder };
+          break;
+        case 'popularity':
+        default:
+          sortCriteria = { popularity: sortOrder };
+          break;
+      }
+    }
+
     // Use regex search with case-insensitive option
     const [tracks, total] = await Promise.all([
       this.trackModel
         .find(filter)
-        .sort({ popularity: -1 }) // Sort by popularity instead of text score
+        .sort(sortCriteria)
         .skip(skip)
         .limit(limit)
         .populate('album_id', 'name images release_date')
@@ -152,14 +197,7 @@ export class SearchService {
     skip: number,
     limit: number,
     page: number,
-    filters?: {
-      minPopularity?: number;
-      maxPopularity?: number;
-      genre?: string;
-      year?: number;
-      fromYear?: number;
-      toYear?: number;
-    },
+    filters?: any,
   ): Promise<PaginatedResult<SearchAlbumDto>> {
     // Build the filter object with case-insensitive regex
     const filter: any = {
@@ -180,6 +218,16 @@ export class SearchService {
     // Add genre filter
     if (filters?.genre) {
       filter.genres = { $regex: filters.genre, $options: 'i' };
+    }
+
+    // Add album type filter
+    if (filters?.albumType) {
+      filter.album_type = filters.albumType;
+    }
+
+    // Add label filter
+    if (filters?.label) {
+      filter.label = { $regex: filters.label, $options: 'i' };
     }
 
     // Add year filters
@@ -205,10 +253,28 @@ export class SearchService {
       }
     }
 
+    // Determine sort criteria
+    let sortCriteria: any = { popularity: -1 }; // Default sort
+    if (filters?.sortBy) {
+      const sortOrder = filters.sortOrder === 'asc' ? 1 : -1;
+      switch (filters.sortBy) {
+        case 'name':
+          sortCriteria = { name: sortOrder };
+          break;
+        case 'releaseDate':
+          sortCriteria = { release_date: sortOrder };
+          break;
+        case 'popularity':
+        default:
+          sortCriteria = { popularity: sortOrder };
+          break;
+      }
+    }
+
     const [albums, total] = await Promise.all([
       this.albumModel
         .find(filter)
-        .sort({ popularity: -1 }) // Sort by popularity instead of text score
+        .sort(sortCriteria)
         .skip(skip)
         .limit(limit)
         .populate('artist_ids', 'name')
@@ -254,14 +320,7 @@ export class SearchService {
     skip: number,
     limit: number,
     page: number,
-    filters?: {
-      minPopularity?: number;
-      maxPopularity?: number;
-      genre?: string;
-      year?: number;
-      fromYear?: number;
-      toYear?: number;
-    },
+    filters?: any,
   ): Promise<PaginatedResult<Artist>> {
     // Build the filter object with case-insensitive regex
     const filter: any = {
@@ -284,10 +343,39 @@ export class SearchService {
       filter.genres = { $regex: filters.genre, $options: 'i' };
     }
 
+    // Add followers filter
+    if (filters?.minFollowers !== undefined || filters?.maxFollowers !== undefined) {
+      filter['followers.total'] = {};
+      if (filters.minFollowers !== undefined) {
+        filter['followers.total'].$gte = filters.minFollowers;
+      }
+      if (filters.maxFollowers !== undefined) {
+        filter['followers.total'].$lte = filters.maxFollowers;
+      }
+    }
+
+    // Determine sort criteria
+    let sortCriteria: any = { popularity: -1 }; // Default sort
+    if (filters?.sortBy) {
+      const sortOrder = filters.sortOrder === 'asc' ? 1 : -1;
+      switch (filters.sortBy) {
+        case 'name':
+          sortCriteria = { name: sortOrder };
+          break;
+        case 'followers':
+          sortCriteria = { 'followers.total': sortOrder };
+          break;
+        case 'popularity':
+        default:
+          sortCriteria = { popularity: sortOrder };
+          break;
+      }
+    }
+
     const [data, total] = await Promise.all([
       this.artistModel
         .find(filter)
-        .sort({ popularity: -1 }) // Sort by popularity instead of text score
+        .sort(sortCriteria)
         .skip(skip)
         .limit(limit)
         .exec(),

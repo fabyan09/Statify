@@ -20,7 +20,7 @@ import {
   useUserPlaylists,
 } from "@/lib/hooks";
 import { useAuth } from "@/contexts/auth-context";
-import { ExternalLink, Search, Heart, Plus, Users, Music, Disc, User, ListMusic, Filter, X } from "lucide-react";
+import { ExternalLink, Search, Heart, Plus, Users, Music, Disc, User, ListMusic, Filter, X, TrendingUp, Clock, Calendar, Tag } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { Pagination } from "@/components/pagination";
@@ -33,6 +33,12 @@ import { AddArtistModal } from "@/components/add-artist-modal";
 export default function SearchPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("tracks");
+
+  // Reset filters when changing tabs
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    setFilters({}); // Clear filters when switching tabs
+  };
 
   // Separate pagination state for each type
   const [tracksPage, setTracksPage] = useState(1);
@@ -184,17 +190,54 @@ export default function SearchPage() {
         </Card>
 
         {/* Filters Toggle Button */}
-        <div className="flex justify-end">
+        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+          <div className="flex items-center gap-2">
+            {Object.keys(filters).length > 0 && (
+              <div className="flex items-center gap-2 flex-wrap">
+                {filters.minPopularity !== undefined && filters.minPopularity > 0 && (
+                  <Badge variant="secondary" className="text-xs">
+                    Pop ≥ {filters.minPopularity}
+                  </Badge>
+                )}
+                {filters.maxPopularity !== undefined && filters.maxPopularity < 100 && (
+                  <Badge variant="secondary" className="text-xs">
+                    Pop ≤ {filters.maxPopularity}
+                  </Badge>
+                )}
+                {filters.genre && (
+                  <Badge variant="secondary" className="text-xs">
+                    {filters.genre}
+                  </Badge>
+                )}
+                {filters.albumType && (
+                  <Badge variant="secondary" className="text-xs capitalize">
+                    {filters.albumType}
+                  </Badge>
+                )}
+                {filters.explicit !== undefined && (
+                  <Badge variant="secondary" className="text-xs">
+                    {filters.explicit ? 'Explicit' : 'Clean'}
+                  </Badge>
+                )}
+                {filters.sortBy && filters.sortBy !== 'popularity' && (
+                  <Badge variant="secondary" className="text-xs capitalize">
+                    Sort: {filters.sortBy}
+                  </Badge>
+                )}
+              </div>
+            )}
+          </div>
           <Button
-            variant="outline"
+            variant={showFilters ? "default" : "outline"}
             size="sm"
             onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 w-full sm:w-auto"
           >
             <Filter className="h-4 w-4" />
-            {showFilters ? "Hide Filters" : "Show Filters"}
+            <span className="hidden sm:inline">{showFilters ? "Hide Filters" : "Show Filters"}</span>
+            <span className="sm:hidden">{showFilters ? "Hide" : "Filters"}</span>
             {Object.keys(filters).length > 0 && (
-              <Badge variant="secondary" className="ml-1">
+              <Badge variant={showFilters ? "secondary" : "default"} className="ml-1">
                 {Object.keys(filters).filter(k => filters[k as keyof SearchFilters] !== undefined && filters[k as keyof SearchFilters] !== '').length}
               </Badge>
             )}
@@ -206,7 +249,12 @@ export default function SearchPage() {
           <Card className="!bg-background/10">
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle className="text-lg">Filters</CardTitle>
+                <div>
+                  <CardTitle className="text-lg">Advanced Filters</CardTitle>
+                  <CardDescription className="text-xs mt-1">
+                    Refine your search with multiple criteria
+                  </CardDescription>
+                </div>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -219,79 +267,390 @@ export default function SearchPage() {
               </div>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Popularity Filter */}
-              {(activeTab === 'tracks' || activeTab === 'albums' || activeTab === 'artists') && (
-                <div className="space-y-3">
-                  <Label className="text-sm font-medium">Popularity</Label>
-                  <div className="flex items-center gap-4">
-                    <div className="flex-1">
-                      <Label className="text-xs text-muted-foreground mb-2">Min: {filters.minPopularity ?? 0}</Label>
-                      <Slider
-                        value={[filters.minPopularity ?? 0]}
-                        min={0}
-                        max={100}
-                        step={5}
-                        onValueChange={(value) => setFilters({ ...filters, minPopularity: value[0] })}
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <Label className="text-xs text-muted-foreground mb-2">Max: {filters.maxPopularity ?? 100}</Label>
-                      <Slider
-                        value={[filters.maxPopularity ?? 100]}
-                        min={0}
-                        max={100}
-                        step={5}
-                        onValueChange={(value) => setFilters({ ...filters, maxPopularity: value[0] })}
-                      />
+              {/* TRACKS FILTERS */}
+              {activeTab === 'tracks' && (
+                <>
+                  {/* Popularity Filter */}
+                  <div className="space-y-3">
+                    <Label className="text-sm font-medium flex items-center gap-2">
+                      <TrendingUp className="h-4 w-4" />
+                      Popularity Range
+                    </Label>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-xs text-muted-foreground mb-2">Min: {filters.minPopularity ?? 0}</Label>
+                        <Slider
+                          value={[filters.minPopularity ?? 0]}
+                          min={0}
+                          max={100}
+                          step={5}
+                          onValueChange={(value) => setFilters({ ...filters, minPopularity: value[0] })}
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground mb-2">Max: {filters.maxPopularity ?? 100}</Label>
+                        <Slider
+                          value={[filters.maxPopularity ?? 100]}
+                          min={0}
+                          max={100}
+                          step={5}
+                          onValueChange={(value) => setFilters({ ...filters, maxPopularity: value[0] })}
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
+
+                  {/* Explicit Content Filter */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Explicit Content</Label>
+                    <Select
+                      value={filters.explicit === undefined ? 'all' : filters.explicit ? 'yes' : 'no'}
+                      onValueChange={(value) => setFilters({
+                        ...filters,
+                        explicit: value === 'all' ? undefined : value === 'yes'
+                      })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Any" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Tracks</SelectItem>
+                        <SelectItem value="yes">Explicit Only</SelectItem>
+                        <SelectItem value="no">Clean Only</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Duration Filter */}
+                  <div className="space-y-3">
+                    <Label className="text-sm font-medium flex items-center gap-2">
+                      <Clock className="h-4 w-4" />
+                      Duration (minutes)
+                    </Label>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="minDuration" className="text-xs text-muted-foreground">Min</Label>
+                        <Input
+                          id="minDuration"
+                          type="number"
+                          placeholder="0"
+                          min={0}
+                          max={30}
+                          value={filters.minDuration ?? ''}
+                          onChange={(e) => setFilters({ ...filters, minDuration: e.target.value ? parseInt(e.target.value) : undefined })}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="maxDuration" className="text-xs text-muted-foreground">Max</Label>
+                        <Input
+                          id="maxDuration"
+                          type="number"
+                          placeholder="30"
+                          min={0}
+                          max={30}
+                          value={filters.maxDuration ?? ''}
+                          onChange={(e) => setFilters({ ...filters, maxDuration: e.target.value ? parseInt(e.target.value) : undefined })}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Sort Options */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Sort By</Label>
+                    <div className="grid grid-cols-2 gap-4">
+                      <Select
+                        value={filters.sortBy ?? 'popularity'}
+                        onValueChange={(value) => setFilters({ ...filters, sortBy: value === 'popularity' ? undefined : value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Popularity" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="popularity">Popularity</SelectItem>
+                          <SelectItem value="name">Name</SelectItem>
+                          <SelectItem value="duration">Duration</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Select
+                        value={filters.sortOrder ?? 'desc'}
+                        onValueChange={(value) => setFilters({ ...filters, sortOrder: value as 'asc' | 'desc' })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Descending" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="desc">Descending</SelectItem>
+                          <SelectItem value="asc">Ascending</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </>
               )}
 
-              {/* Genre Filter */}
-              {(activeTab === 'albums' || activeTab === 'artists') && (
-                <div className="space-y-2">
-                  <Label htmlFor="genre" className="text-sm font-medium">Genre</Label>
-                  <Input
-                    id="genre"
-                    placeholder="e.g. rap, rock, pop..."
-                    value={filters.genre ?? ''}
-                    onChange={(e) => setFilters({ ...filters, genre: e.target.value || undefined })}
-                  />
-                </div>
-              )}
-
-              {/* Year Filters */}
+              {/* ALBUMS FILTERS */}
               {activeTab === 'albums' && (
-                <div className="space-y-3">
-                  <Label className="text-sm font-medium">Release Year</Label>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="fromYear" className="text-xs text-muted-foreground">From</Label>
-                      <Input
-                        id="fromYear"
-                        type="number"
-                        placeholder="1950"
-                        min={1950}
-                        max={new Date().getFullYear()}
-                        value={filters.fromYear ?? ''}
-                        onChange={(e) => setFilters({ ...filters, fromYear: e.target.value ? parseInt(e.target.value) : undefined })}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="toYear" className="text-xs text-muted-foreground">To</Label>
-                      <Input
-                        id="toYear"
-                        type="number"
-                        placeholder={new Date().getFullYear().toString()}
-                        min={1950}
-                        max={new Date().getFullYear()}
-                        value={filters.toYear ?? ''}
-                        onChange={(e) => setFilters({ ...filters, toYear: e.target.value ? parseInt(e.target.value) : undefined })}
-                      />
+                <>
+                  {/* Popularity Filter */}
+                  <div className="space-y-3">
+                    <Label className="text-sm font-medium flex items-center gap-2">
+                      <TrendingUp className="h-4 w-4" />
+                      Popularity Range
+                    </Label>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-xs text-muted-foreground mb-2">Min: {filters.minPopularity ?? 0}</Label>
+                        <Slider
+                          value={[filters.minPopularity ?? 0]}
+                          min={0}
+                          max={100}
+                          step={5}
+                          onValueChange={(value) => setFilters({ ...filters, minPopularity: value[0] })}
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground mb-2">Max: {filters.maxPopularity ?? 100}</Label>
+                        <Slider
+                          value={[filters.maxPopularity ?? 100]}
+                          min={0}
+                          max={100}
+                          step={5}
+                          onValueChange={(value) => setFilters({ ...filters, maxPopularity: value[0] })}
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
+
+                  {/* Genre Filter */}
+                  <div className="space-y-2">
+                    <Label htmlFor="genre" className="text-sm font-medium flex items-center gap-2">
+                      <Music className="h-4 w-4" />
+                      Genre
+                    </Label>
+                    <Input
+                      id="genre"
+                      placeholder="e.g. rap, rock, pop..."
+                      value={filters.genre ?? ''}
+                      onChange={(e) => setFilters({ ...filters, genre: e.target.value || undefined })}
+                    />
+                  </div>
+
+                  {/* Album Type Filter */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium flex items-center gap-2">
+                      <Disc className="h-4 w-4" />
+                      Album Type
+                    </Label>
+                    <Select
+                      value={filters.albumType ?? 'all'}
+                      onValueChange={(value) => setFilters({ ...filters, albumType: value === 'all' ? undefined : value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="All Types" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Types</SelectItem>
+                        <SelectItem value="album">Album</SelectItem>
+                        <SelectItem value="single">Single</SelectItem>
+                        <SelectItem value="compilation">Compilation</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Label Filter */}
+                  <div className="space-y-2">
+                    <Label htmlFor="label" className="text-sm font-medium flex items-center gap-2">
+                      <Tag className="h-4 w-4" />
+                      Record Label
+                    </Label>
+                    <Input
+                      id="label"
+                      placeholder="e.g. Universal, Sony..."
+                      value={filters.label ?? ''}
+                      onChange={(e) => setFilters({ ...filters, label: e.target.value || undefined })}
+                    />
+                  </div>
+
+                  {/* Year Filters */}
+                  <div className="space-y-3">
+                    <Label className="text-sm font-medium flex items-center gap-2">
+                      <Calendar className="h-4 w-4" />
+                      Release Year
+                    </Label>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="fromYear" className="text-xs text-muted-foreground">From</Label>
+                        <Input
+                          id="fromYear"
+                          type="number"
+                          placeholder="1950"
+                          min={1950}
+                          max={new Date().getFullYear()}
+                          value={filters.fromYear ?? ''}
+                          onChange={(e) => setFilters({ ...filters, fromYear: e.target.value ? parseInt(e.target.value) : undefined })}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="toYear" className="text-xs text-muted-foreground">To</Label>
+                        <Input
+                          id="toYear"
+                          type="number"
+                          placeholder={new Date().getFullYear().toString()}
+                          min={1950}
+                          max={new Date().getFullYear()}
+                          value={filters.toYear ?? ''}
+                          onChange={(e) => setFilters({ ...filters, toYear: e.target.value ? parseInt(e.target.value) : undefined })}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Sort Options */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Sort By</Label>
+                    <div className="grid grid-cols-2 gap-4">
+                      <Select
+                        value={filters.sortBy ?? 'popularity'}
+                        onValueChange={(value) => setFilters({ ...filters, sortBy: value === 'popularity' ? undefined : value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Popularity" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="popularity">Popularity</SelectItem>
+                          <SelectItem value="name">Name</SelectItem>
+                          <SelectItem value="releaseDate">Release Date</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Select
+                        value={filters.sortOrder ?? 'desc'}
+                        onValueChange={(value) => setFilters({ ...filters, sortOrder: value as 'asc' | 'desc' })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Descending" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="desc">Descending</SelectItem>
+                          <SelectItem value="asc">Ascending</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* ARTISTS FILTERS */}
+              {activeTab === 'artists' && (
+                <>
+                  {/* Popularity Filter */}
+                  <div className="space-y-3">
+                    <Label className="text-sm font-medium flex items-center gap-2">
+                      <TrendingUp className="h-4 w-4" />
+                      Popularity Range
+                    </Label>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-xs text-muted-foreground mb-2">Min: {filters.minPopularity ?? 0}</Label>
+                        <Slider
+                          value={[filters.minPopularity ?? 0]}
+                          min={0}
+                          max={100}
+                          step={5}
+                          onValueChange={(value) => setFilters({ ...filters, minPopularity: value[0] })}
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground mb-2">Max: {filters.maxPopularity ?? 100}</Label>
+                        <Slider
+                          value={[filters.maxPopularity ?? 100]}
+                          min={0}
+                          max={100}
+                          step={5}
+                          onValueChange={(value) => setFilters({ ...filters, maxPopularity: value[0] })}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Genre Filter */}
+                  <div className="space-y-2">
+                    <Label htmlFor="genre" className="text-sm font-medium flex items-center gap-2">
+                      <Music className="h-4 w-4" />
+                      Genre
+                    </Label>
+                    <Input
+                      id="genre"
+                      placeholder="e.g. rap, rock, pop..."
+                      value={filters.genre ?? ''}
+                      onChange={(e) => setFilters({ ...filters, genre: e.target.value || undefined })}
+                    />
+                  </div>
+
+                  {/* Followers Filter */}
+                  <div className="space-y-3">
+                    <Label className="text-sm font-medium flex items-center gap-2">
+                      <Users className="h-4 w-4" />
+                      Followers Range
+                    </Label>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="minFollowers" className="text-xs text-muted-foreground">Min</Label>
+                        <Input
+                          id="minFollowers"
+                          type="number"
+                          placeholder="0"
+                          min={0}
+                          value={filters.minFollowers ?? ''}
+                          onChange={(e) => setFilters({ ...filters, minFollowers: e.target.value ? parseInt(e.target.value) : undefined })}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="maxFollowers" className="text-xs text-muted-foreground">Max</Label>
+                        <Input
+                          id="maxFollowers"
+                          type="number"
+                          placeholder="10000000"
+                          min={0}
+                          value={filters.maxFollowers ?? ''}
+                          onChange={(e) => setFilters({ ...filters, maxFollowers: e.target.value ? parseInt(e.target.value) : undefined })}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Sort Options */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Sort By</Label>
+                    <div className="grid grid-cols-2 gap-4">
+                      <Select
+                        value={filters.sortBy ?? 'popularity'}
+                        onValueChange={(value) => setFilters({ ...filters, sortBy: value === 'popularity' ? undefined : value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Popularity" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="popularity">Popularity</SelectItem>
+                          <SelectItem value="name">Name</SelectItem>
+                          <SelectItem value="followers">Followers</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Select
+                        value={filters.sortOrder ?? 'desc'}
+                        onValueChange={(value) => setFilters({ ...filters, sortOrder: value as 'asc' | 'desc' })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Descending" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="desc">Descending</SelectItem>
+                          <SelectItem value="asc">Ascending</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </>
               )}
             </CardContent>
           </Card>
@@ -299,7 +658,7 @@ export default function SearchPage() {
       </div>
 
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs value={activeTab} onValueChange={handleTabChange}>
         <TabsList className="grid w-full grid-cols-3 sm:grid-cols-5 !bg-background/10">
           <TabsTrigger value="tracks" className="flex items-center gap-1 sm:gap-2">
             <Music className="h-4 w-4" />
