@@ -158,12 +158,12 @@ export default function SearchPage() {
 
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       {/* Search Input - Hero Section */}
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         <div className="text-center space-y-2">
-          <h1 className="text-4xl font-bold tracking-tight">Search</h1>
-          <p className="text-muted-foreground text-lg">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight">Search</h1>
+          <p className="text-muted-foreground text-sm sm:text-base lg:text-lg">
             Find tracks, albums, artists, playlists, and users
           </p>
         </div>
@@ -300,26 +300,26 @@ export default function SearchPage() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-5 !bg-background/10">
-          <TabsTrigger value="tracks" className="flex items-center gap-2">
+        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-5 !bg-background/10">
+          <TabsTrigger value="tracks" className="flex items-center gap-1 sm:gap-2">
             <Music className="h-4 w-4" />
-            Tracks
+            <span className="hidden sm:inline">Tracks</span>
           </TabsTrigger>
-          <TabsTrigger value="albums" className="flex items-center gap-2">
+          <TabsTrigger value="albums" className="flex items-center gap-1 sm:gap-2">
             <Disc className="h-4 w-4" />
-            Albums
+            <span className="hidden sm:inline">Albums</span>
           </TabsTrigger>
-          <TabsTrigger value="artists" className="flex items-center gap-2">
+          <TabsTrigger value="artists" className="flex items-center gap-1 sm:gap-2">
             <Users className="h-4 w-4" />
-            Artists
+            <span className="hidden sm:inline">Artists</span>
           </TabsTrigger>
-          <TabsTrigger value="playlists" className="flex items-center gap-2">
+          <TabsTrigger value="playlists" className="flex items-center gap-1 sm:gap-2 col-span-3 sm:col-span-1">
             <ListMusic className="h-4 w-4" />
-            Playlists
+            <span className="hidden sm:inline">Playlists</span>
           </TabsTrigger>
-          <TabsTrigger value="users" className="flex items-center gap-2">
+          <TabsTrigger value="users" className="flex items-center gap-1 sm:gap-2 hidden sm:flex">
             <User className="h-4 w-4" />
-            Users
+            <span className="hidden sm:inline">Users</span>
           </TabsTrigger>
         </TabsList>
 
@@ -355,96 +355,172 @@ export default function SearchPage() {
                       <p className="text-muted-foreground">No tracks found matching your search.</p>
                     </div>
                   ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="w-[60px]"></TableHead>
-                          <TableHead className="w-[250px]">Track</TableHead>
-                          <TableHead className="w-[200px]">Artist</TableHead>
-                          <TableHead className="w-[200px]">Album</TableHead>
-                          <TableHead className="w-[100px]">Duration</TableHead>
-                          <TableHead className="w-[120px]">Popularity</TableHead>
-                          <TableHead className="w-[100px]">Actions</TableHead>
-                          <TableHead className="w-[100px]"></TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
+                    <>
+                      {/* Desktop Table */}
+                      <div className="hidden lg:block">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead className="w-[60px]"></TableHead>
+                              <TableHead className="w-[250px]">Track</TableHead>
+                              <TableHead className="w-[200px]">Artist</TableHead>
+                              <TableHead className="w-[200px]">Album</TableHead>
+                              <TableHead className="w-[100px]">Duration</TableHead>
+                              <TableHead className="w-[120px]">Popularity</TableHead>
+                              <TableHead className="w-[100px]">Actions</TableHead>
+                              <TableHead className="w-[100px]"></TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {tracks.map((track: SearchTrack) => (
+                              <TableRow key={track._id}>
+                                <TableCell>
+                                  <div className="relative h-10 w-10 rounded overflow-hidden bg-muted">
+                                    {track.albumImage ? (
+                                      <Image
+                                        src={track.albumImage}
+                                        alt={track.albumName || track.name}
+                                        fill
+                                        className="object-cover"
+                                      />
+                                    ) : (
+                                      <div className="h-full w-full bg-muted" />
+                                    )}
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex flex-col">
+                                    <span className="font-medium truncate block" title={track.name}>
+                                      {track.name}
+                                    </span>
+                                    {track.explicit && (
+                                      <Badge variant="secondary" className="text-xs w-fit mt-1">
+                                        Explicit
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <span className="text-sm block truncate">
+                                    {track.artistNames}
+                                  </span>
+                                </TableCell>
+                                <TableCell>
+                                  <span className="text-sm text-muted-foreground block truncate">
+                                    {track.albumName}
+                                  </span>
+                                </TableCell>
+                                <TableCell>{formatDuration(track.duration_ms)}</TableCell>
+                                <TableCell>
+                                  <Badge variant="outline">{track.popularity}/100</Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex items-center gap-1">
+                                    <Button
+                                      variant="ghost"
+                                      size="icon-sm"
+                                      onClick={() => handleLikeToggle(track._id)}
+                                      className={isTrackLiked(track._id) ? "text-red-500 hover:text-red-600" : ""}
+                                    >
+                                      <Heart className={isTrackLiked(track._id) ? "h-4 w-4 fill-current" : "h-4 w-4"} />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon-sm"
+                                      onClick={() => handleOpenPlaylistDialog(track._id)}
+                                    >
+                                      <Plus className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <a
+                                    href={track.external_urls.spotify}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary"
+                                  >
+                                    Spotify
+                                    <ExternalLink className="h-3 w-3" />
+                                  </a>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+
+                      {/* Mobile Card List */}
+                      <div className="lg:hidden space-y-3">
                         {tracks.map((track: SearchTrack) => (
-                          <TableRow key={track._id}>
-                            <TableCell>
-                              <div className="relative h-10 w-10 rounded overflow-hidden bg-muted">
-                                {track.albumImage ? (
-                                  <Image
-                                    src={track.albumImage}
-                                    alt={track.albumName || track.name}
-                                    fill
-                                    className="object-cover"
-                                  />
-                                ) : (
-                                  <div className="h-full w-full bg-muted" />
-                                )}
+                          <Card key={track._id} className="!bg-background/10 overflow-hidden">
+                            <CardContent className="p-3">
+                              <div className="flex gap-3">
+                                <div className="relative h-14 w-14 sm:h-16 sm:w-16 rounded overflow-hidden bg-muted flex-shrink-0">
+                                  {track.albumImage ? (
+                                    <Image
+                                      src={track.albumImage}
+                                      alt={track.albumName || track.name}
+                                      fill
+                                      className="object-cover"
+                                    />
+                                  ) : (
+                                    <div className="h-full w-full bg-muted" />
+                                  )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-start justify-between gap-2">
+                                    <div className="flex-1 min-w-0">
+                                      <h3 className="font-medium truncate text-sm sm:text-base" title={track.name}>
+                                        {track.name}
+                                      </h3>
+                                      <p className="text-xs sm:text-sm text-muted-foreground truncate">
+                                        {track.artistNames}
+                                      </p>
+                                      <p className="text-xs text-muted-foreground truncate">
+                                        {track.albumName}
+                                      </p>
+                                    </div>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon-sm"
+                                      onClick={() => handleLikeToggle(track._id)}
+                                      className={isTrackLiked(track._id) ? "text-red-500 hover:text-red-600 flex-shrink-0" : "flex-shrink-0"}
+                                    >
+                                      <Heart className={isTrackLiked(track._id) ? "h-4 w-4 fill-current" : "h-4 w-4"} />
+                                    </Button>
+                                  </div>
+                                  <div className="flex items-center gap-2 mt-2 flex-wrap">
+                                    <Badge variant="outline" className="text-xs">{track.popularity}/100</Badge>
+                                    <span className="text-xs text-muted-foreground">{formatDuration(track.duration_ms)}</span>
+                                    {track.explicit && (
+                                      <Badge variant="secondary" className="text-xs">E</Badge>
+                                    )}
+                                    <div className="ml-auto flex items-center gap-1">
+                                      <Button
+                                        variant="ghost"
+                                        size="icon-sm"
+                                        onClick={() => handleOpenPlaylistDialog(track._id)}
+                                      >
+                                        <Plus className="h-4 w-4" />
+                                      </Button>
+                                      <a
+                                        href={track.external_urls.spotify}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="p-2 hover:bg-accent rounded-md"
+                                      >
+                                        <ExternalLink className="h-3 w-3 text-muted-foreground" />
+                                      </a>
+                                    </div>
+                                  </div>
+                                </div>
                               </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex flex-col">
-                                <span className="font-medium truncate block" title={track.name}>
-                                  {track.name}
-                                </span>
-                                {track.explicit && (
-                                  <Badge variant="secondary" className="text-xs w-fit mt-1">
-                                    Explicit
-                                  </Badge>
-                                )}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <span className="text-sm block truncate">
-                                {track.artistNames}
-                              </span>
-                            </TableCell>
-                            <TableCell>
-                              <span className="text-sm text-muted-foreground block truncate">
-                                {track.albumName}
-                              </span>
-                            </TableCell>
-                            <TableCell>{formatDuration(track.duration_ms)}</TableCell>
-                            <TableCell>
-                              <Badge variant="outline">{track.popularity}/100</Badge>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-1">
-                                <Button
-                                  variant="ghost"
-                                  size="icon-sm"
-                                  onClick={() => handleLikeToggle(track._id)}
-                                  className={isTrackLiked(track._id) ? "text-red-500 hover:text-red-600" : ""}
-                                >
-                                  <Heart className={isTrackLiked(track._id) ? "h-4 w-4 fill-current" : "h-4 w-4"} />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon-sm"
-                                  onClick={() => handleOpenPlaylistDialog(track._id)}
-                                >
-                                  <Plus className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <a
-                                href={track.external_urls.spotify}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary"
-                              >
-                                Spotify
-                                <ExternalLink className="h-3 w-3" />
-                              </a>
-                            </TableCell>
-                          </TableRow>
+                            </CardContent>
+                          </Card>
                         ))}
-                      </TableBody>
-                    </Table>
+                      </div>
+                    </>
                   )}
                 </CardContent>
               </Card>

@@ -77,14 +77,14 @@ export default function LibraryPage() {
   }
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center gap-4">
-        <div className="p-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl">
-          <Heart className="h-8 w-8 text-white" />
+    <div className="space-y-6 sm:space-y-8">
+      <div className="flex items-center gap-3 sm:gap-4">
+        <div className="p-2 sm:p-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex-shrink-0">
+          <Heart className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
         </div>
         <div>
-          <h1 className="text-4xl font-bold">My Library</h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold">My Library</h1>
+          <p className="text-muted-foreground mt-1 text-sm sm:text-base">
             Your favorite tracks, albums, and artists
           </p>
         </div>

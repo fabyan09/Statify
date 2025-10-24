@@ -139,8 +139,8 @@ export default function CollabNetworkPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold mb-2">Collaboration Network</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-2xl sm:text-3xl font-bold mb-2">Collaboration Network</h1>
+        <p className="text-muted-foreground text-sm sm:text-base">
           Visualizing {collaborations.length} collaborations between{" "}
           {graphData.nodes.length} artists
         </p>

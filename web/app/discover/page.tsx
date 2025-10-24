@@ -197,23 +197,23 @@ export default function DiscoverPage() {
   };
 
   return (
-    <div className="min-h-screen pb-12">
+    <div className="min-h-screen pb-12 sm:pb-16">
       {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center gap-3 mb-2">
-          <Sparkles className="w-8 h-8 text-green-500" />
-          <h1 className="text-4xl font-bold">Découvrir</h1>
+      <div className="mb-6 sm:mb-8">
+        <div className="flex items-center gap-2 sm:gap-3 mb-2">
+          <Sparkles className="w-6 h-6 sm:w-8 sm:h-8 text-green-500" />
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold">Découvrir</h1>
         </div>
-        <p className="text-gray-400">
+        <p className="text-gray-400 text-sm sm:text-base">
           Recommandations personnalisées basées sur vos goûts musicaux
         </p>
       </div>
 
       {/* Floating Navigation Menu */}
       {recommendations.length > 0 && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-1rem)] sm:w-auto sm:max-w-4xl">
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-1rem)] max-w-[95vw] sm:w-auto sm:max-w-4xl">
           <div className="bg-background/95 backdrop-blur-md border border-border rounded-full shadow-lg px-2 sm:px-4 py-1.5 sm:py-2">
-            <div className="flex items-center justify-center gap-1 sm:gap-1.5 flex-wrap max-h-[120px] overflow-y-auto scrollbar-hide">
+            <div className="flex items-center justify-start sm:justify-center gap-1 sm:gap-1.5 overflow-x-auto scrollbar-hide">
               {recommendations.map((section, idx) => {
                 const IconComponent = iconMap[section.icon] || Sparkles;
                 const isActive = activeSection === idx;
@@ -255,17 +255,17 @@ export default function DiscoverPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-12">
+        <div className="space-y-8 sm:space-y-12">
           {recommendations.map((section, idx) => {
             const IconComponent = iconMap[section.icon] || Sparkles;
 
             return (
               <div key={idx} id={`section-${idx}`} className="scroll-mt-24">
-                <div className="flex items-center gap-3 mb-4">
-                  <IconComponent className="w-6 h-6 text-green-500" />
+                <div className="flex items-center gap-2 sm:gap-3 mb-4">
+                  <IconComponent className="w-5 h-5 sm:w-6 sm:h-6 text-green-500 flex-shrink-0" />
                   <div>
-                    <h2 className="text-2xl font-bold">{section.title}</h2>
-                    <p className="text-sm text-gray-400">{section.description}</p>
+                    <h2 className="text-xl sm:text-2xl font-bold">{section.title}</h2>
+                    <p className="text-xs sm:text-sm text-gray-400">{section.description}</p>
                   </div>
                 </div>
 

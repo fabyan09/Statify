@@ -96,22 +96,23 @@ export default function PlaylistsPage() {
   }
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="p-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl">
-            <ListMusic className="h-8 w-8 text-white" />
+    <div className="space-y-6 sm:space-y-8">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3 sm:gap-4">
+          <div className="p-2 sm:p-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex-shrink-0">
+            <ListMusic className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
           </div>
           <div>
-            <h1 className="text-4xl font-bold">My Playlists</h1>
-            <p className="text-muted-foreground mt-1">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold">My Playlists</h1>
+            <p className="text-muted-foreground mt-1 text-sm sm:text-base">
               Manage and organize your music collections
             </p>
           </div>
         </div>
-        <Button onClick={() => setShowCreateForm(!showCreateForm)} size="lg">
+        <Button onClick={() => setShowCreateForm(!showCreateForm)} size="lg" className="w-full sm:w-auto">
           <Plus className="h-5 w-5 mr-2" />
-          Create Playlist
+          <span className="hidden sm:inline">Create Playlist</span>
+          <span className="sm:hidden">Create</span>
         </Button>
       </div>
 

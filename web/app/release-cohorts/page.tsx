@@ -55,8 +55,8 @@ export default function ReleaseCohortsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold mb-2">Release Cohorts</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-2xl sm:text-3xl font-bold mb-2">Release Cohorts</h1>
+        <p className="text-muted-foreground text-sm sm:text-base">
           Analyze release patterns across {yearlyData.length} years
         </p>
       </div>
