@@ -603,5 +603,5 @@ Ce projet a été réalisé dans le cadre d'un cours de **Base de Données** pou
 
 ## 👥 Contributeurs
 
-- [Fabyan](https://github.com/fabyan09)
+- [Fabrice](https://github.com/fabyan09)
 - [Merlin](https://github.com/Merlin1337)
